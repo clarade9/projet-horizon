@@ -1,0 +1,896 @@
+/* ════════════════════════════════════════
+   CARTE INTERACTIVE — Projet Horizon
+   ════════════════════════════════════════ */
+
+/* ── Conteneur principal ── */
+#map-select {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-modales);
+  background: #06080f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .5s ease;
+  overflow: hidden;
+}
+#map-select.on  { opacity: 1; pointer-events: all; }
+#map-select.out { opacity: 0; pointer-events: none; }
+
+/* ── Image de la carte ── */
+.map-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+/* ── HUD haut-gauche : titre SEM ── */
+.map-hud-title {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(6,8,15,.82);
+  border: 1.5px solid rgba(245,158,11,.3);
+  border-radius: 12px;
+  padding: 8px 14px;
+  backdrop-filter: blur(10px);
+}
+.map-hud-icon { font-size: 22px; line-height: 1; }
+.map-hud-sem {
+  font-family: var(--font-titre);
+  font-size: 14px;
+  font-weight: 800;
+  color: rgba(255,238,195,.95);
+  line-height: 1.2;
+}
+.map-hud-sub {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+  color: rgba(245,158,11,.6);
+}
+
+/* ── Badge joueur haut-droite ── */
+.map-hud-player {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(6,8,15,.82);
+  border: 1.5px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  padding: 8px 14px;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.map-hud-player:hover { border-color: rgba(255,255,255,.25); }
+.map-hud-player-em { font-size: 18px; line-height: 1; }
+.map-hud-player-name {
+  font-family: var(--font-titre);
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,.85);
+  line-height: 1.2;
+}
+.map-hud-player-svc {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: rgba(255,255,255,.35);
+}
+
+/* ── Barre de progression en bas ── */
+.map-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: linear-gradient(0deg, rgba(6,8,15,.98) 60%, transparent);
+  padding: 32px 24px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.map-progress-text {
+  font-family: var(--font-titre);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  color: rgba(255,255,255,.9);
+  text-shadow: 0 0 24px rgba(245,158,11,.5), 0 2px 8px rgba(0,0,0,.8);
+  animation: mapInstructPulse 2.8s ease-in-out infinite;
+}
+@keyframes mapInstructPulse {
+  0%, 100% { opacity: .85; }
+  50%       { opacity: 1; color: rgba(255,220,100,.95); text-shadow: 0 0 32px rgba(245,158,11,.7), 0 2px 8px rgba(0,0,0,.8); }
+}
+.map-progress-track {
+  width: 160px;
+  height: 3px;
+  background: rgba(255,255,255,.1);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.map-progress-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 99px;
+  transition: width .6s ease;
+}
+.map-progress-count {
+  font-family: var(--font-titre);
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(245,158,11,.8);
+}
+
+/* ── Zones cliquables ── */
+/* #map-zones : position/taille ajustées en JS selon les dimensions rendues
+   de l'image (object-fit:contain) pour que les % correspondent à l'image */
+.map-zones {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Chaque zone = bounding-box d'une pièce (left/top/width/height en %) */
+.map-zone {
+  position: absolute;
+  cursor: pointer;
+  z-index: 5;
+  pointer-events: all;
+  touch-action: manipulation;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 6px;
+  --dot-color: #60a0f8;
+}
+
+/* Conteneur dot + halo — 36×36, centré dans la zone */
+.map-zone-pin {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+/* Point lumineux */
+.map-zone-dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,.55);
+  border: 2px solid var(--dot-color);
+  box-shadow: 0 0 10px var(--dot-color);
+  animation: mapPulse 2.2s ease-in-out infinite;
+  transition: transform .2s, box-shadow .3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Halo externe — dans le même conteneur que le dot */
+.map-zone-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--dot-color);
+  animation: mapRingPulse 2.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Label sous le point */
+.map-zone-label {
+  font-family: var(--font-titre);
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.85);
+  text-align: center;
+  text-shadow: 0 1px 6px rgba(0,0,0,.9), 0 0 12px rgba(0,0,0,.8);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: color .2s;
+  max-width: 90px;
+  line-height: 1.3;
+}
+
+/* Hover */
+.map-zone:hover .map-zone-dot {
+  transform: scale(1.25);
+  box-shadow: 0 0 22px var(--dot-color), 0 0 40px var(--dot-color);
+}
+.map-zone:hover .map-zone-label { color: #fff; }
+.map-zone:hover .map-zone-ring  { animation-play-state: paused; opacity: .5; }
+
+/* Focus clavier */
+.map-zone:focus { outline: none; }
+.map-zone:focus-visible .map-zone-dot {
+  box-shadow: 0 0 0 3px rgba(255,255,255,.5), 0 0 16px var(--dot-color);
+}
+
+/* Zone active (sélectionnée) */
+.map-zone.active .map-zone-dot {
+  transform: scale(1.5);
+  box-shadow: 0 0 28px var(--dot-color), 0 0 50px var(--dot-color);
+}
+.map-zone.active .map-zone-label { color: #fff; font-weight: 800; }
+
+/* Zone complétée */
+.map-zone.done .map-zone-dot  { animation: none; background: var(--lime); box-shadow: 0 0 10px var(--lime); }
+.map-zone.done .map-zone-ring  { animation: none; opacity: 0; }
+.map-zone.done .map-zone-label { color: var(--lime); }
+
+@keyframes mapPulse {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 10px var(--dot-color); }
+  50%       { transform: scale(1.2); box-shadow: 0 0 22px var(--dot-color), 0 0 36px var(--dot-color); }
+}
+@keyframes mapRingPulse {
+  0%   { transform: scale(1);   opacity: .65; }
+  100% { transform: scale(2.8); opacity: 0;   }
+}
+
+/* ── Mode debug ?showzones ──────────────────────────────────────
+   Ajouter ?showzones dans l'URL pour voir les bounding-boxes
+   de chaque zone en surbrillance colorée.
+   ─────────────────────────────────────────────────────────────── */
+#map-select.showzones .map-zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--dot-color);
+  opacity: .25;
+  border: 2px solid var(--dot-color);
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 0;
+}
+#map-select.showzones .map-zone-pin,
+#map-select.showzones .map-zone-label { position: relative; z-index: 1; }
+
+/* ── Tooltip de survol ── */
+.map-tooltip {
+  position: absolute;
+  width: 210px;
+  background: rgba(8,10,20,.96);
+  border: 1.5px solid rgba(255,255,255,.12);
+  border-radius: 14px;
+  padding: 13px 15px;
+  pointer-events: none;
+  z-index: 20;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .2s, transform .2s;
+  backdrop-filter: blur(12px);
+}
+.map-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.map-tt-em   { font-size: 22px; line-height: 1; margin-bottom: 6px; display: block; }
+.map-tt-name {
+  font-family: var(--font-titre);
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+.map-tt-affaire {
+  font-family: var(--font-texte);
+  font-size: 11px;
+  color: rgba(255,255,255,.45);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.map-tt-statut {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  /* couleur injectée inline */
+}
+.map-tt-risques {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.map-tt-risk-tag {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 99px;
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.4);
+}
+
+/* ── Overlay de confirmation ── */
+.map-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.68);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s;
+  backdrop-filter: blur(4px);
+}
+.map-confirm-overlay.on {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Panneau de confirmation */
+.map-confirm-panel {
+  width: min(480px, 92vw);
+  background: rgba(10,12,22,.97);
+  border: 1.5px solid rgba(255,255,255,.12);
+  border-radius: 20px;
+  padding: 24px 24px 20px;
+  animation: popIn .32s cubic-bezier(.34,1.25,.64,1);
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+@keyframes popIn {
+  from { opacity:0; transform:scale(.94) translateY(8px); }
+  to   { opacity:1; transform:scale(1)   translateY(0);   }
+}
+
+.map-confirm-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(255,255,255,.08);
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+  color: rgba(255,255,255,.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+}
+.map-confirm-close:hover { background: rgba(255,255,255,.15); color: #fff; }
+
+/* Header du panneau */
+.map-confirm-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding-right: 36px;
+}
+.map-confirm-em {
+  font-size: 36px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.map-confirm-service {
+  font-family: var(--font-titre);
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 3px;
+}
+.map-confirm-affaire {
+  font-family: var(--font-texte);
+  font-size: 11px;
+  color: var(--svc-color, rgba(255,255,255,.5));
+  line-height: 1.3;
+}
+
+/* Bande de scène illustrative */
+.map-confirm-scene-strip {
+  width: calc(100% + 48px);
+  margin: 0 -24px 16px;
+  height: 80px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+}
+.map-confirm-scene-strip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(10,12,22,.7), transparent 40%, transparent 60%, rgba(10,12,22,.7));
+}
+
+/* Description */
+.map-confirm-desc {
+  font-family: var(--font-texte);
+  font-size: 13px;
+  color: rgba(255,255,255,.55);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+/* Meta (durée + chapitres) */
+.map-confirm-meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.map-confirm-meta span {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: rgba(255,255,255,.35);
+  background: rgba(255,255,255,.06);
+  border-radius: 99px;
+  padding: 4px 10px;
+}
+
+/* Tags risques */
+.map-confirm-risks { margin-bottom: 16px; }
+.map-confirm-risks-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: rgba(255,255,255,.25);
+  margin-bottom: 6px;
+}
+.map-confirm-risks-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.map-risk-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: rgba(245,158,11,.1);
+  border: 1px solid rgba(245,158,11,.2);
+  color: rgba(245,158,11,.8);
+}
+
+/* Séparateur */
+.map-confirm-sep {
+  height: 1px;
+  background: rgba(255,255,255,.07);
+  margin: 16px 0;
+}
+
+/* Champs nom */
+.map-confirm-name-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: rgba(255,255,255,.3);
+  margin-bottom: 8px;
+}
+.map-confirm-name-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.map-name-input {
+  flex: 1;
+  padding: 10px 13px;
+  background: rgba(255,255,255,.07);
+  border: 1.5px solid rgba(255,255,255,.12);
+  border-radius: 99px;
+  font-family: var(--font-titre);
+  font-size: 13px;
+  color: rgba(255,255,255,.85);
+  outline: none;
+  text-align: center;
+  transition: border-color .2s, background .2s;
+  min-width: 0;
+}
+.map-name-input::placeholder { color: rgba(255,255,255,.25); }
+.map-name-input:focus {
+  border-color: rgba(96,160,248,.6);
+  background: rgba(255,255,255,.1);
+}
+
+/* CTA */
+.map-confirm-cta {
+  display: block;
+  width: 100%;
+  background: linear-gradient(135deg, #1c5520, #2e7a2e);
+  color: rgba(220,255,210,.92);
+  border: none;
+  border-radius: 10px;
+  padding: 13px;
+  font-family: var(--font-titre);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all .25s;
+  letter-spacing: .03em;
+}
+.map-confirm-cta:disabled {
+  opacity: .3;
+  cursor: not-allowed;
+  background: rgba(255,255,255,.08);
+}
+.map-confirm-cta:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(28,85,32,.45);
+}
+
+/* ── Bouton retour (sous-menu → parent) ── */
+.map-confirm-back ~ .map-confirm-header {
+  margin-top: 28px;
+}
+.map-confirm-back {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 99px;
+  padding: 5px 12px;
+  font-family: var(--font-titre);
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,.45);
+  cursor: pointer;
+  transition: all .2s;
+}
+.map-confirm-back:hover { background: rgba(255,255,255,.12); color: rgba(255,255,255,.8); }
+
+/* ── Sous-menu service opérationnel ── */
+.map-subsvc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+.map-subsvc-card {
+  background: rgba(255,255,255,.04);
+  border: 1.5px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background .2s, border-color .2s, transform .15s;
+}
+.map-subsvc-card:hover {
+  background: rgba(255,255,255,.08);
+  border-color: var(--subsvc-color, rgba(255,255,255,.2));
+  transform: translateY(-2px);
+}
+.map-subsvc-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.map-subsvc-em {
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.map-subsvc-name {
+  font-family: var(--font-titre);
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+}
+.map-subsvc-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--subsvc-color, rgba(255,255,255,.4));
+  margin-top: 3px;
+}
+.map-subsvc-desc {
+  font-family: var(--font-texte);
+  font-size: 12px;
+  color: rgba(255,255,255,.45);
+  line-height: 1.5;
+}
+
+/* ── Splash screen mobile ── */
+#map-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(4, 6, 14, .82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(3px);
+}
+.map-splash-inner {
+  text-align: center;
+  padding: 32px;
+  pointer-events: none;
+}
+.map-splash-icon {
+  font-size: 52px;
+  margin-bottom: 18px;
+  display: block;
+  animation: mapSplashBob 2.2s ease-in-out infinite;
+}
+@keyframes mapSplashBob {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+.map-splash-text {
+  font-family: var(--font-titre);
+  font-size: 26px;
+  font-weight: 800;
+  color: white;
+  line-height: 1.3;
+  margin-bottom: 14px;
+  text-shadow: 0 2px 12px rgba(0,0,0,.6);
+}
+.map-splash-hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: rgba(255, 255, 255, .4);
+  animation: blink 1.5s ease infinite;
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  /* Scroll horizontal pour voir toute la carte */
+  #map-select {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: none;
+    /* -webkit-overflow-scrolling: touch est obsolète depuis iOS 13 et
+       provoque un flash/jank (couche composite désynchronisée). Supprimé. */
+  }
+
+  /* Indicateur de scroll (fade droit) */
+  #map-select::after {
+    content: '';
+    position: fixed;
+    top: 0; right: 0;
+    width: 40px; height: 100%;
+    background: linear-gradient(to right, transparent, rgba(6,8,15,.5));
+    pointer-events: none;
+    z-index: 15;
+    animation: scrollHint 1.8s ease-in-out 1s infinite alternate;
+  }
+  @keyframes scrollHint {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  .map-zone-dot { width: 30px; height: 30px; font-size: 15px; }
+  .map-zone.secondary .map-zone-dot { width: 22px; height: 22px; font-size: 12px; }
+  .map-zone-label { font-size: 9px; max-width: 70px; }
+  .map-tooltip { display: none; }     /* tooltip remplacé par tap → panneau */
+  .map-hud-title { padding: 6px 10px; }
+  .map-hud-sem { font-size: 12px; }
+  .map-hud-sub { display: none; }
+  /* Overlay fixe : toujours visible même si la carte est scrollée à droite */
+  .map-confirm-overlay {
+    position: fixed;
+    align-items: flex-end;
+  }
+  .map-confirm-panel {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 82vh;
+    overflow-y: auto;
+    animation: mapSlideUp .3s ease-out;
+    padding-bottom: 0; /* le CTA gère son propre espacement */
+  }
+  /* CTA toujours visible en bas du panneau même si le contenu est long */
+  .map-confirm-panel .map-confirm-cta {
+    position: sticky;
+    bottom: 0;
+    width: 90%;
+    margin: 12px auto 0;
+    min-height: 56px;
+    font-size: 15px;
+    display: block;
+    background: linear-gradient(135deg, #1c5520, #2e7a2e);
+    box-shadow: 0 -12px 24px rgba(10, 12, 22, .9);
+  }
+  .map-confirm-name-row { flex-direction: column; }
+  .map-progress-bar { padding: 14px 16px 10px; }
+}
+@keyframes mapSlideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ══ MOBILE NAV — flèches, dots, hint, panneau bas ══════════════
+   Tout caché sur desktop, visible uniquement sur mobile (≤768px) */
+
+/* Flèches gauche / droite */
+.map-nav-btn { display: none; }
+
+/* Dots pagination */
+.map-dots { display: none; }
+
+/* Hint "Faites défiler" */
+.map-swipe-hint { display: none; }
+
+/* Panneau bas */
+.map-bottom-panel { display: none; }
+
+@media (max-width: 768px) {
+
+  /* ── Flèches ── */
+  .map-nav-btn {
+    display: flex;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(27,42,74,.85);
+    border: 1px solid rgba(255,255,255,.2);
+    color: #fff;
+    font-size: 22px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    -webkit-tap-highlight-color: transparent;
+    line-height: 1;
+    padding: 0;
+  }
+  .map-nav-left  { left: 10px; }
+  .map-nav-right { right: 10px; }
+  .map-nav-btn:active {
+    background: rgba(27,42,74,1);
+    transform: translateY(-50%) scale(0.95);
+  }
+
+  /* ── Dots ── */
+  .map-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    position: absolute;
+    bottom: 76px; /* juste au-dessus du panneau bas */
+    left: 0; right: 0;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .map-dot {
+    width: 6px; height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,.25);
+    transition: width .2s, background .2s;
+  }
+  .map-dot.active {
+    width: 18px;
+    background: #d4af37;
+    border-radius: 3px;
+  }
+
+  /* ── Hint swipe ── */
+  .map-swipe-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(27,42,74,.9);
+    border: 1px solid rgba(212,175,55,.4);
+    border-radius: 99px;
+    padding: 8px 16px;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    color: #fff;
+    z-index: 20;
+    pointer-events: none;
+    /* display géré par JS (display:none par défaut, flex au besoin) */
+    animation: hintPulse 1s ease infinite alternate;
+  }
+  @keyframes hintPulse {
+    from { opacity: 0.7; }
+    to   { opacity: 1; }
+  }
+
+  /* ── Panneau bas ── */
+  .map-bottom-panel {
+    display: flex;
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: #1b2a4a;
+    border-top: 1px solid rgba(255,255,255,.1);
+    padding: 10px 14px 14px;
+    align-items: center;
+    gap: 12px;
+    z-index: 15;
+  }
+  .map-bp-service {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+  .map-bp-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .map-bp-info { min-width: 0; }
+  .map-bp-name {
+    font-family: var(--font-titre, 'Nunito', sans-serif);
+    font-size: 14px; font-weight: 700;
+    color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .map-bp-meta {
+    font-family: var(--font-titre, 'Nunito', sans-serif);
+    font-size: 11px;
+    color: rgba(255,255,255,.45);
+    display: flex; align-items: center; gap: 5px;
+    margin-top: 2px;
+  }
+  .map-bp-sep { opacity: 0.3; }
+  .map-bp-btn {
+    flex-shrink: 0;
+    padding: 11px 18px;
+    background: #d4af37;
+    color: #1b2a4a;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font-titre, 'Nunito', sans-serif);
+    font-size: 14px; font-weight: 800;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .1s;
+  }
+  .map-bp-btn:active   { transform: scale(0.97); }
+  .map-bp-btn:disabled {
+    background: rgba(255,255,255,.15);
+    color: rgba(255,255,255,.3);
+    cursor: not-allowed;
+  }
+
+  /* Masquer l'ancienne barre de progression sur mobile (remplacée par le panneau bas) */
+  .map-progress-bar { display: none; }
+
+  /* Padding en bas pour que les zones ne soient pas cachées sous le panneau */
+  #map-select {
+    padding-bottom: 70px;
+  }
+}

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Classement Final — Projet Horizon Live</title>
+<link rel="stylesheet" href="css/live.css">
+<script src="config.js"></script>
+<script src="js/data/chapters.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/live-session.js"></script>
+</head>
+<body id="live-resultats">
+
+<canvas id="lr-confetti-canvas"></canvas>
+
+<div id="lr-page">
+  <div class="lr-inner">
+
+    <!-- Header -->
+    <div class="lr-header">
+      <div class="lr-eyebrow">Projet Horizon · Session terminée</div>
+      <div class="lr-title">🏆 Classement Final</div>
+      <div class="lr-sub" id="lr-session-info">Chargement…</div>
+    </div>
+
+    <!-- Podium top-3 -->
+    <div>
+      <div class="lr-section-title">Podium</div>
+      <div class="lr-podium" id="lr-podium">
+        <div style="color:var(--lv-text3);font-size:14px;padding:20px 0;">Calcul en cours…</div>
+      </div>
+    </div>
+
+    <!-- Stats globales -->
+    <div>
+      <div class="lr-section-title" style="margin-bottom:14px;">Statistiques de session</div>
+      <div class="lr-stats-grid" id="lr-stats-grid"></div>
+    </div>
+
+    <!-- Classement complet -->
+    <div class="lr-classement-section">
+      <div class="lr-section-title">Classement complet</div>
+      <div class="lr-classement" id="lr-classement"></div>
+    </div>
+
+    <!-- Stats par affaire -->
+    <div>
+      <div class="lr-section-title" style="margin-bottom:12px;">Par affaire</div>
+      <div class="lr-affaires" id="lr-affaires"></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="lr-actions">
+      <button class="lv-btn lv-btn-gold lv-btn-lg" id="lr-btn-csv" onclick="lrExporterCSV()">
+        ⬇ Télécharger CSV
+      </button>
+      <a href="live-formateur.html" class="lv-btn lv-btn-primary lv-btn-lg" style="text-decoration:none;">
+        Nouvelle session
+      </a>
+      <a href="dashboard.html" class="lv-btn lv-btn-ghost" style="text-decoration:none;">
+        Tableau de bord
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// LIVE-RESULTATS — Classement final
+// Reçoit ?session=ID depuis live-formateur.js (lfVoirClassementFinal)
+// ═══════════════════════════════════════════════════════════════
+
+let _lrSessionId = null;
+let _lrClassement = [];
+let _lrAffairesJouees = [];
+
+function _lr$(id) { return document.getElementById(id); }
+function _lrEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.addEventListener('DOMContentLoaded', async () => {
+  LiveSession.init();
+
+  const params = new URLSearchParams(window.location.search);
+  _lrSessionId = params.get('session');
+
+  if (!_lrSessionId) {
+    _lr$('lr-session-info').textContent = 'Aucune session spécifiée.';
+    return;
+  }
+
+  _lr$('lr-session-info').textContent = 'Session #' + _lrSessionId;
+  await _lrCharger();
+});
+
+async function _lrCharger() {
+  const classement = await LiveSession.calculerClassement(_lrSessionId);
+  _lrClassement = classement;
+
+  // Stats
+  const nbP = classement.length;
+  let totalCorrects = 0, totalVotes = 0, tempsTotalMs = 0;
+  classement.forEach(j => {
+    totalCorrects += j.nbCorrects;
+    totalVotes    += j.nbVotes;
+    tempsTotalMs  += j.tempsMoyenMs;
+  });
+  const tauxGlobal  = totalVotes > 0 ? Math.round(totalCorrects / totalVotes * 100) : 0;
+  const tempsMoyen  = nbP > 0 ? Math.round(tempsTotalMs / nbP / 1000) : 0;
+  const nbAffaires  = classement[0] ? classement[0].nbVotes : 0;
+
+  // Stats grid
+  _lr$('lr-stats-grid').innerHTML = [
+    { val: nbP,               lbl: 'Participants' },
+    { val: nbAffaires,        lbl: 'Affaires jouées' },
+    { val: tauxGlobal + '%',  lbl: 'Taux bonnes réponses' },
+    { val: tempsMoyen + 's',  lbl: 'Temps moyen de réponse' },
+  ].map(s => `
+    <div class="lr-stat-card">
+      <div class="lr-stat-val">${s.val}</div>
+      <div class="lr-stat-lbl">${s.lbl}</div>
+    </div>`).join('');
+
+  // Podium
+  _lrRendrePodium(classement);
+
+  // Classement complet
+  const medals = ['🥇','🥈','🥉'];
+  _lr$('lr-classement').innerHTML = classement.map((j, i) => `
+    <div class="lr-classement-row ${i < 3 ? 'top3' : ''}" style="animation-delay:${i * 0.04}s">
+      <div class="lr-rank">${medals[i] || (i + 1)}</div>
+      <div class="lr-nom">${_lrEsc(j.nom)}</div>
+      <div class="lr-correct">${j.nbCorrects}/${j.nbVotes} correctes</div>
+      <div class="lr-score">${j.scoreTotal} pts</div>
+    </div>`).join('');
+
+  // Confettis pour le top-3
+  if (classement.length > 0) _lrConfetti();
+}
+
+function _lrRendrePodium(classement) {
+  if (classement.length === 0) {
+    _lr$('lr-podium').innerHTML = '<div style="color:var(--lv-text3);font-size:14px;padding:20px 0">Aucun participant</div>';
+    return;
+  }
+  const medals = ['🥇','🥈','🥉'];
+  const podClasses = ['p1','p2','p3'];
+  // Ordre visuel : 2ème, 1er, 3ème
+  const top3 = classement.slice(0, 3);
+  const ordre = top3.length >= 2 ? [top3[1], top3[0], top3[2]].filter(Boolean) : [top3[0]];
+  const oMedals = top3.length >= 2 ? [medals[1], medals[0], medals[2]] : [medals[0]];
+  const oClasses = top3.length >= 2 ? ['p2','p1','p3'] : ['p1'];
+
+  _lr$('lr-podium').innerHTML = ordre.map((j, vi) => `
+    <div class="lr-podium-item ${oClasses[vi]}">
+      <div class="lr-podium-medal">${oMedals[vi]}</div>
+      <div class="lr-podium-nom">${_lrEsc(j.nom)}</div>
+      <div class="lr-podium-score">${j.scoreTotal} pts</div>
+      <div class="lr-podium-base"></div>
+    </div>`).join('');
+}
+
+function _lrConfetti() {
+  const canvas = _lr$('lr-confetti-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const pieces = [];
+  const couleurs = ['#d4af37','#10b981','#2563eb','#ea580c','#f472b6','#fff'];
+  for (let i = 0; i < 120; i++) {
+    pieces.push({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 200,
+      w: 6 + Math.random() * 8,
+      h: 6 + Math.random() * 8,
+      color: couleurs[Math.floor(Math.random() * couleurs.length)],
+      vx: (Math.random() - .5) * 3,
+      vy: 2 + Math.random() * 4,
+      rot: Math.random() * 360,
+      rots: (Math.random() - .5) * 8,
+    });
+  }
+
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, 1 - frame / 180);
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      ctx.restore();
+      p.x   += p.vx;
+      p.y   += p.vy;
+      p.rot += p.rots;
+    });
+    frame++;
+    if (frame < 200) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  requestAnimationFrame(draw);
+}
+
+async function lrExporterCSV() {
+  if (_lrSessionId) await LiveSession.exporterCSV(parseInt(_lrSessionId));
+}
+</script>
+</body>
+</html>

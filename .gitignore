@@ -1,0 +1,22 @@
+# Dépendances
+node_modules/
+
+# Playwright
+test-results/
+playwright-report/
+tests/report/
+
+# Vercel
+.vercel/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Fichiers de travail temporaires
+Capture d'écran suivi jeu/
+*.command
+
+# Pages orphelines (ne pas versionner)
+projet_horizon_v4.html
+live-formateur-resultats.html

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tableau de bord — Projet Horizon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     ÉCRAN DE CONNEXION
+══════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🏛️</div>
+    <div class="login-title">Projet Horizon</div>
+    <div class="login-sub">Tableau de bord formateur<br>Saisissez votre code d'accès</div>
+    <input type="password" id="login-input" class="login-input"
+           placeholder="Code formateur" autocomplete="off"
+           oninput="$('login-error').textContent=''">
+    <div id="login-error" class="login-error"></div>
+    <button class="login-btn" onclick="checkLogin()">Accéder →</button>
+    <a href="index.html" class="login-back">← Retour au jeu</a>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     APPLICATION TABLEAU DE BORD
+══════════════════════════════════════ -->
+<div id="dashboard-app">
+
+  <!-- BARRE LATÉRALE -->
+  <aside class="dash-sidebar">
+    <div class="dash-sidebar-logo">
+      <div class="dash-sidebar-logo-title">🏛️ Projet Horizon</div>
+      <div class="dash-sidebar-logo-sub">Espace formateur</div>
+    </div>
+
+    <nav class="dash-nav">
+      <div class="dash-nav-section">Analyse</div>
+      <button class="dash-nav-btn" id="nav-global" onclick="showView('global')">
+        <span class="nav-ic">📊</span> Vue globale
+      </button>
+      <button class="dash-nav-btn" id="nav-players" onclick="showView('players')">
+        <span class="nav-ic">👥</span> Par joueur
+      </button>
+      <button class="dash-nav-btn" id="nav-chapters" onclick="showView('chapters')">
+        <span class="nav-ic">📋</span> Par affaire
+      </button>
+      <div class="dash-nav-section">Gestion</div>
+      <button class="dash-nav-btn" id="nav-settings" onclick="showView('settings')">
+        <span class="nav-ic">⚙️</span> Paramètres
+      </button>
+      <div class="dash-nav-section">Sessions Live</div>
+      <button class="dash-nav-btn" onclick="window.open('live-formateur.html','_blank')" style="position:relative;">
+        <span class="nav-ic">📡</span> Mode Live
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:#2563eb;color:#fff;font-size:9px;font-weight:800;letter-spacing:.06em;padding:2px 6px;border-radius:4px;">NOUVEAU</span>
+      </button>
+    </nav>
+
+    <div class="dash-sidebar-footer">
+      <a href="index.html" class="dash-back-link">← Retour au jeu</a>
+    </div>
+  </aside>
+
+  <!-- ZONE DE CONTENU PRINCIPAL -->
+  <main class="dash-content">
+
+    <!-- ══ VUE GLOBALE ══ -->
+    <div class="dash-view" id="view-global">
+
+      <div class="view-header">
+        <div>
+          <div class="dash-page-title">Vue globale</div>
+          <div class="dash-page-sub">Toutes les sessions enregistrées sur cet appareil</div>
+        </div>
+        <div class="refresh-info">
+          <span class="refresh-dot" id="refresh-dot"></span>
+          <span class="refresh-ts" id="refresh-ts">Chargement…</span>
+        </div>
+      </div>
+
+      <!-- Cartes de stats -->
+      <div class="stat-cards">
+        <div class="stat-card">
+          <div class="stat-card-val" id="stat-total">—</div>
+          <div class="stat-card-lbl">Joueurs au total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val" id="stat-today">—</div>
+          <div class="stat-card-lbl">Actifs aujourd'hui</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val" id="stat-avgtime">—</div>
+          <div class="stat-card-lbl">Temps moyen</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val" id="stat-completion">—</div>
+          <div class="stat-card-lbl">Taux de complétion</div>
+        </div>
+      </div>
+
+      <!-- Graphique activité dans le temps -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <div class="dash-card-title">📅 Activité dans le temps</div>
+          <div class="period-filters">
+            <button class="period-btn active" onclick="setPeriod('week',this)">Cette semaine</button>
+            <button class="period-btn" onclick="setPeriod('month',this)">Ce mois</button>
+            <button class="period-btn" onclick="setPeriod('all',this)">Tout</button>
+          </div>
+        </div>
+        <canvas id="chart-activity" height="80"></canvas>
+        <div id="chart-empty" class="chart-empty" style="display:none">Aucune session pour cette période</div>
+      </div>
+
+      <!-- Grille : répartition service + résultats globaux -->
+      <div class="global-grid">
+
+        <div class="dash-card">
+          <div class="dash-card-title">🏢 Répartition par service</div>
+          <div id="service-bars">
+            <div class="empty-mini">Aucune donnée</div>
+          </div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">📋 Résultats globaux</div>
+          <div class="result-bars">
+            <div class="result-bar-row">
+              <div class="result-bar-lbl">✅ Référence Anticorruption</div>
+              <div class="result-bar-track">
+                <div class="result-bar-fill fill-certified" id="bar-certified" style="width:0%"></div>
+              </div>
+              <div class="result-bar-count" id="cnt-certified">0</div>
+            </div>
+            <div class="result-bar-row">
+              <div class="result-bar-lbl">⚠️ Vigilance renforcée</div>
+              <div class="result-bar-track">
+                <div class="result-bar-fill fill-warning" id="bar-warning" style="width:0%"></div>
+              </div>
+              <div class="result-bar-count" id="cnt-warning">0</div>
+            </div>
+            <div class="result-bar-row">
+              <div class="result-bar-lbl">🔴 Formation obligatoire</div>
+              <div class="result-bar-track">
+                <div class="result-bar-fill fill-failed" id="bar-failed" style="width:0%"></div>
+              </div>
+              <div class="result-bar-count" id="cnt-failed">0</div>
+            </div>
+            <div class="result-bar-row">
+              <div class="result-bar-lbl">— Abandons</div>
+              <div class="result-bar-track">
+                <div class="result-bar-fill fill-abandoned" id="bar-abandoned" style="width:0%"></div>
+              </div>
+              <div class="result-bar-count" id="cnt-abandoned">0</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Affaires les plus difficiles -->
+      <div class="dash-card">
+        <div class="dash-card-title">🔥 Affaires les plus difficiles <span class="dash-card-hint">classées par taux d'infractions</span></div>
+        <div id="hardest-chapters">
+          <div class="empty-mini">Aucune donnée disponible</div>
+        </div>
+      </div>
+
+      <!-- Dernières sessions -->
+      <div class="dash-card">
+        <div class="dash-card-title">🕐 Dernières sessions</div>
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Joueur</th>
+              <th>Service</th>
+              <th>Résultat</th>
+              <th>Score</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="recent-tbody"></tbody>
+        </table>
+      </div>
+
+    </div><!-- /view-global -->
+
+
+    <!-- ══ VUE PAR JOUEUR ══ -->
+    <div class="dash-view" id="view-players">
+      <div class="dash-page-title">Par joueur</div>
+      <div class="dash-page-sub">Toutes les sessions — cliquez sur une ligne pour le détail</div>
+      <div class="dash-card" style="padding:0;overflow:hidden">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Joueur</th>
+              <th>Service</th>
+              <th>Résultat</th>
+              <th>Score</th>
+              <th>Chapitres</th>
+              <th>Progression</th>
+              <th>SOS</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="players-tbody"></tbody>
+        </table>
+      </div>
+    </div><!-- /view-players -->
+
+
+    <!-- ══ VUE PAR AFFAIRE ══ -->
+    <div class="dash-view" id="view-chapters">
+      <div class="dash-page-title">Par affaire</div>
+      <div class="dash-page-sub">Distribution des décisions et points de débriefing suggérés</div>
+      <div class="chapter-cards" id="chapter-cards"></div>
+    </div><!-- /view-chapters -->
+
+
+    <!-- ══ PARAMÈTRES ══ -->
+    <div class="dash-view" id="view-settings">
+      <div class="dash-page-title">Paramètres</div>
+      <div class="dash-page-sub">Gestion du tableau de bord formateur</div>
+
+      <div class="settings-grid">
+
+        <div class="dash-card">
+          <div class="dash-card-title">🔑 Code d'accès formateur</div>
+          <p class="settings-p">Modifier le code stocké localement sur cet appareil.</p>
+          <div class="settings-row">
+            <input type="password" id="new-code-input" class="settings-input"
+                   placeholder="Nouveau code formateur" autocomplete="off">
+            <button class="settings-btn primary" onclick="changeCode()">Modifier</button>
+          </div>
+          <div id="code-feedback" class="settings-feedback"></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">📥 Export des données</div>
+          <p class="settings-p">Télécharger l'ensemble des sessions au format CSV (compatible Excel).</p>
+          <button class="settings-btn primary full" onclick="exportCSV()">⬇ Exporter toutes les sessions (CSV)</button>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">🧪 Données de test</div>
+          <p class="settings-p">Génère des joueurs fictifs pour vérifier le rendu du tableau de bord.</p>
+          <div class="settings-btn-group">
+            <button class="settings-btn primary" onclick="generateTestData()">Créer 15 faux joueurs</button>
+            <button class="settings-btn" id="btn-demo" onclick="toggleDemoMode()">Mode démo : OFF</button>
+          </div>
+          <div class="settings-hint">Le mode démo affiche des données fictives sans modifier le localStorage.</div>
+        </div>
+
+        <div class="dash-card danger-card">
+          <div class="dash-card-title">🗑 Réinitialisation</div>
+          <p class="settings-p">Efface définitivement toutes les sessions enregistrées. Action irréversible.</p>
+          <div class="settings-row">
+            <input type="text" id="reset-confirm" class="settings-input"
+                   placeholder='Tapez CONFIRMER' autocomplete="off">
+            <button class="settings-btn danger" onclick="resetData()">Réinitialiser</button>
+          </div>
+          <div id="reset-feedback" class="settings-feedback"></div>
+        </div>
+
+      </div>
+    </div><!-- /view-settings -->
+
+  </main>
+</div><!-- /dashboard-app -->
+
+
+<!-- ══ PANNEAU DÉTAIL JOUEUR ══ -->
+<div id="player-detail" onclick="if(event.target===this)closePlayerDetail()">
+  <div class="player-detail-inner" id="player-detail-inner"></div>
+</div>
+
+<!-- ══ TOAST NOUVEAU JOUEUR ══ -->
+<div id="new-session-toast" class="new-session-toast">
+  <span class="toast-dot"></span>
+  <span id="new-session-msg">Nouveau joueur connecté</span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+/* ══ FRAME ══ */
+#game{
+  position:fixed;
+  top:0;left:0;right:0;
+  /* --app-height calculé par JS (_setAppHeight) corrige la bande noire iOS PWA standalone.
+     Fallback : 100dvh (meilleur que 100vh sur iOS moderne), puis 100vh. */
+  height:var(--app-height, 100dvh);
+  overflow:hidden;
+  background:#080810;
+}
+
+/* ── Safe-area : éléments décalés sous l'encoche / Dynamic Island ──────
+   env(..., 0px) garantit un fallback 0 sur navigateurs sans support.
+   Le bloc @supports active le padding réel uniquement si env() est dispo. ── */
+@supports (padding-top: env(safe-area-inset-top)) {
+  #hud    { top:  calc(env(safe-area-inset-top,0px) + 10px); right: calc(env(safe-area-inset-right,0px) + 14px); }
+  #cdots  { top:  calc(env(safe-area-inset-top,0px) + 118px); left:  calc(env(safe-area-inset-left,0px)  + 14px); }
+  #lex-btn    { top: calc(env(safe-area-inset-top,0px) + 14px); left:  calc(env(safe-area-inset-left,0px)  + 14px); }
+  #sound-btn      { top: calc(env(safe-area-inset-top,0px) + 104px); right: calc(env(safe-area-inset-right,0px) + 14px); }
+  #fullscreen-btn { top: calc(env(safe-area-inset-top,0px) + 148px); right: calc(env(safe-area-inset-right,0px) + 14px); }
+}
+#game::before,#game::after{content:'';position:absolute;left:0;right:0;z-index:4;pointer-events:none;}
+#game::before{top:0;height:calc(env(safe-area-inset-top,0px) + 5.5vh);background:linear-gradient(180deg,rgba(10,10,20,.7),transparent);}
+#game::after{bottom:0;height:calc(5.5vh + env(safe-area-inset-bottom,0px));background:linear-gradient(0deg,rgba(10,10,20,.7),transparent);}
+
+/* ══ FADE ══ */
+#fade{position:absolute;inset:0;background:#0a0a14;z-index:190;opacity:0;pointer-events:none;transition:opacity .5s ease;}
+#fade.in{opacity:1;}
+
+/* ══ HUD ══ */
+#hud{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 14px);z-index:150;display:flex;flex-direction:column;gap:5px;opacity:0;transition:opacity .5s;}
+#hud.on{opacity:1;}
+.hg{display:flex;align-items:center;gap:5px;background:rgba(10,12,20,.78);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:3px 10px 3px 7px;width:160px;max-width:160px;box-sizing:border-box;}
+.hg-ic{font-size:11px;flex-shrink:0;}
+.hg-lbl{font-family:'Space Mono',monospace;font-size:7px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);flex-shrink:0;white-space:nowrap;}
+.hg-bar{flex:1;min-width:0;height:3px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;}
+.hg-fill{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+#hg-i .hg-fill{background:var(--lime);box-shadow:0 0 4px var(--lime);}
+#hg-p .hg-fill{background:var(--jauge-projet);box-shadow:0 0 4px var(--jauge-projet);}
+#hg-m .hg-fill{background:var(--jauge-image);box-shadow:0 0 4px var(--jauge-image);}
+.hg-v{font-family:'Space Mono',monospace;font-size:8px;color:rgba(255,255,255,.5);flex-shrink:0;font-weight:700;}
+
+/* chapter dots */
+#cdots{position:absolute;top:calc(env(safe-area-inset-top,0px) + 118px);left:calc(env(safe-area-inset-left,0px) + 14px);z-index:150;display:flex;gap:8px;align-items:center;opacity:0;transition:opacity .5s;}
+/* lex-btn sits top-left; cdots sit below it — no overlap */
+#cdots.on{opacity:1;}
+.cdot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);transition:all .4s;}
+.cdot.done{background:var(--gold);box-shadow:0 0 6px var(--gold);}
+.cdot.cur{background:white;box-shadow:0 0 8px white;}
+
+/* ── Animation téléphone plein écran ─────────────────────────── */
+#phone-anim-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0);
+  animation: phoneOverlayIn .35s ease forwards;
+  pointer-events: all;
+}
+#phone-anim-overlay.phone-anim-out {
+  animation: phoneOverlayOut .4s ease forwards;
+}
+.phone-anim-img {
+  max-height: 72vh;
+  max-width: 85vw;
+  object-fit: contain;
+  animation: phoneRingShake .5s ease-in-out infinite;
+}
+@keyframes phoneOverlayIn {
+  from { background: rgba(0,0,0,0); }
+  to   { background: rgba(0,0,0,.6); }
+}
+@keyframes phoneOverlayOut {
+  from { background: rgba(0,0,0,.6); opacity: 1; }
+  to   { background: rgba(0,0,0,0);  opacity: 0; }
+}
+@keyframes phoneRingShake {
+  0%,100% { transform: rotate(-2.5deg) scale(1.02); }
+  25%     { transform: rotate( 2.5deg) scale(1.06); }
+  75%     { transform: rotate(-1.5deg) scale(1.04); }
+}
+
+/* Barre de préchargement — affichée au démarrage, discrète */
+#preload-wrap {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 300;
+  padding: 6px 16px 10px;
+  background: linear-gradient(0deg, rgba(4,6,14,.7) 0%, transparent 100%);
+  pointer-events: none;
+  transition: opacity .5s;
+}
+#preload-bar {
+  height: 2px;
+  width: 0%;
+  background: var(--lime, #a3e635);
+  border-radius: 2px;
+  transition: width .3s ease;
+}
+#preload-lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,.35);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+/* Bouton de reprise audio (autoplay bloqué — iOS/Safari) */
+#audio-resume-btn{position:fixed;bottom:calc(24px + var(--safe-bottom, 0px));left:50%;transform:translateX(-50%);z-index:500;background:rgba(20,30,60,.92);color:rgba(255,255,255,.9);border:1.5px solid rgba(96,160,248,.4);border-radius:24px;padding:10px 22px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 4px 20px rgba(0,0,0,.5);animation:resumeBtnPop .3s cubic-bezier(.34,1.56,.64,1);}
+#audio-resume-btn:hover{background:rgba(30,64,180,.92);border-color:rgba(96,160,248,.7);}
+@keyframes resumeBtnPop{from{opacity:0;transform:translateX(-50%) translateY(12px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+
+/* sound button */
+#sound-btn{position:absolute;top:calc(env(safe-area-inset-top,0px) + 104px);right:calc(env(safe-area-inset-right,0px) + 14px);z-index:150;width:36px;height:36px;border-radius:50%;background:rgba(15,28,65,.85);border:1.5px solid rgba(96,140,220,.25);font-size:16px;cursor:pointer;display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px);transition:all .25s;color:white;padding:0;}
+#sound-btn.on{display:flex;}
+#sound-btn:hover{background:rgba(26,58,138,.92);border-color:rgba(96,160,248,.5);}
+
+#fullscreen-btn{position:absolute;top:calc(env(safe-area-inset-top,0px) + 148px);right:calc(env(safe-area-inset-right,0px) + 14px);z-index:150;width:36px;height:36px;border-radius:50%;background:rgba(15,28,65,.85);border:1.5px solid rgba(96,140,220,.25);font-size:16px;cursor:pointer;display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px);transition:all .25s;color:white;padding:0;}
+#fullscreen-btn.on{display:flex;}
+#fullscreen-btn:hover{background:rgba(26,58,138,.92);border-color:rgba(96,160,248,.5);}
+
+/* lex button */
+#lex-btn{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:calc(env(safe-area-inset-left,0px) + 14px);z-index:150;background:rgba(15,28,65,.85);border:1.5px solid rgba(96,140,220,.25);border-radius:14px;padding:8px 0;width:52px;font-family:'Nunito',sans-serif;color:rgba(147,197,253,.7);cursor:pointer;display:none;transition:all .25s;backdrop-filter:blur(10px);flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+#lex-btn .lex-btn-ic{font-size:20px;display:block;text-align:center;transition:transform .25s cubic-bezier(.34,1.4,.64,1);}
+#lex-btn .lex-btn-lbl{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;display:block;text-align:center;}
+#lex-btn:hover{background:rgba(26,58,138,.92);border-color:rgba(96,160,248,.5);color:white;}
+#lex-btn:hover .lex-btn-ic{transform:rotate(-8deg) scale(1.15);}
+#lex-btn.on{display:flex;}
+
+/* ══ CHARACTERS — BD portrait style ══ */
+#chars{position:absolute;inset:0;z-index:10;pointer-events:none;}
+.char{position:absolute;display:flex;flex-direction:column;align-items:center;transition:opacity .5s,transform .5s,filter .5s;}
+.char.hidden{opacity:0;pointer-events:none;}
+.char.idle{filter:brightness(.35) saturate(.15);}
+.char.speaking{filter:none;}
+
+.char-bubble{position:relative;display:flex;flex-direction:column;align-items:center;}
+@keyframes breathe{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+.char.speaking .char-bubble{animation:breathe 2.8s ease-in-out infinite;}
+
+/* ── portrait image ── */
+.char-portrait{
+  height:clamp(200px,30vh,320px);
+  width:auto;
+  display:block;
+  object-fit:contain;
+  object-position:bottom;
+  filter:drop-shadow(0 8px 24px rgba(0,0,0,.6));
+}
+.char.speaking .char-portrait{filter:drop-shadow(0 8px 32px rgba(255,255,255,.12)) drop-shadow(0 0 16px rgba(255,220,100,.08));}
+
+/* ── speaking ring — centered on portrait head area ── */
+.char-ring{
+  width:clamp(80px,10vh,110px);height:clamp(80px,10vh,110px);
+  border-radius:50%;border:2.5px solid rgba(255,255,255,.4);
+  position:absolute;top:4%;left:50%;transform:translateX(-50%);
+  animation:ringPulse 1.8s ease-in-out infinite;opacity:0;pointer-events:none;z-index:5;
+}
+.char.speaking .char-ring{opacity:1;}
+@keyframes ringPulse{0%,100%{transform:translateX(-50%) scale(1);opacity:.55;}50%{transform:translateX(-50%) scale(1.3);opacity:0;}}
+
+/* ── name badge ── */
+.char-badge{font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;padding:5px 14px;border-radius:99px;margin-top:8px;white-space:nowrap;background:rgba(10,12,20,.85);border:1.5px solid rgba(255,255,255,.18);color:rgba(255,255,255,.7);}
+
+/* ══ DIALOGUE ══ */
+#dlg{position:absolute;bottom:calc(5.5vh + 12px + var(--safe-bottom, 0px));left:50%;transform:translateX(-50%);width:min(720px,92vw);background:rgba(10,12,22,.92);border:1.5px solid rgba(255,255,255,.12);border-radius:18px;padding:20px 24px 18px;z-index:100;backdrop-filter:blur(16px);box-shadow:0 12px 48px rgba(0,0,0,.5);cursor:pointer;transition:opacity .35s,transform .35s;}
+#dlg.hidden{opacity:0;transform:translateX(-50%) translateY(16px);pointer-events:none;transition:none;}
+.dlg-spk-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.dlg-spk-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+.dlg-speaker{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:var(--gold);font-weight:700;}
+.dlg-text{font-family:'Nunito',sans-serif;font-size:16px;line-height:1.65;color:rgba(255,255,255,.92);min-height:48px;}
+.dlg-text em{color:var(--texte-accent);font-style:italic;}
+.dlg-text strong{color:white;font-style:normal;}
+.dlg-hint{position:absolute;bottom:14px;right:18px;font-family:'Space Mono',monospace;font-size:9px;color:rgba(255,255,255,.28);animation:blink 1.5s ease infinite;}
+@keyframes blink{0%,100%{opacity:.28;}50%{opacity:.75;}}
+
+/* ── Termes lexique cliquables ── */
+.lexique-terme{
+  border-bottom:1px dashed rgba(212,175,55,.55);
+  cursor:pointer;color:inherit;
+  transition:border-color .15s;
+}
+.lexique-terme:hover,.lexique-terme:active{border-bottom-color:#d4af37;}
+
+/* ══ FOOTER LÉGAL ÉCRAN DE FIN ══ */
+#footer-legal-fin{text-align:center;padding:24px 16px;font-size:12px;color:#666;font-family:'Nunito',sans-serif;margin-top:32px;border-top:1px solid rgba(255,255,255,.1);}
+#footer-legal-fin a{color:#76B837;text-decoration:none;margin:0 6px;}
+#footer-legal-fin a:hover{text-decoration:underline;}
+#footer-legal-fin small{display:block;margin-top:8px;color:#444;font-size:11px;}

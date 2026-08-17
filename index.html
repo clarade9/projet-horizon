@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Projet Horizon — Serious Game Anticorruption</title>
+<!-- Favicons -->
+<link rel="icon" type="image/x-icon" href="favicon.ico?v=4">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png?v=4">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png?v=4">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=4">
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<!-- Meta -->
+<meta name="application-name" content="Projet Horizon">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Horizon">
+<meta name="theme-color" content="#080810">
+<meta name="msapplication-TileColor" content="#080810">
+<meta name="msapplication-TileImage" content="assets/icons/icon-144x144.png">
+<!-- Tabler Icons (pour la mécanique documents) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="css/variables.css">
+<link rel="stylesheet" href="css/scenes.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/panels.css">
+<link rel="stylesheet" href="css/intro.css">
+<link rel="stylesheet" href="css/personalization.css">
+<link rel="stylesheet" href="css/mobile.css">
+<link rel="stylesheet" href="css/badges.css">
+<link rel="stylesheet" href="css/tutorial.css">
+<link rel="stylesheet" href="css/map-select.css">
+</head>
+<body>
+
+<!-- Vidéo d'introduction -->
+<div id="intro-video-overlay">
+  <video id="intro-video" src="assets/intro.mp4" playsinline muted></video>
+  <button id="intro-video-skip">Passer →</button>
+</div>
+
+<!-- Splash screen — chargement initial -->
+<div id="splash">
+  <img id="splash-logo" src="assets/icons/logo-transparent.png" alt="Projet Horizon">
+  <div id="splash-title">Formation Anticorruption · Loi Sapin II</div>
+  <div id="splash-bar-wrap"><div id="splash-bar"></div></div>
+  <div id="splash-lbl">Chargement des dossiers…</div>
+</div>
+
+<div id="game">
+
+  <!-- Scene -->
+  <div id="scene"></div>
+  <div id="fade"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hg" id="hg-i"><span class="hg-ic">⚖️</span><span class="hg-lbl">Intégrité</span><div class="hg-bar"><div class="hg-fill" id="hf-i" style="width:100%"></div></div><span class="hg-v" id="hv-i">100</span></div>
+    <div class="hg" id="hg-p"><span class="hg-ic">📈</span><span class="hg-lbl">Projet</span><div class="hg-bar"><div class="hg-fill" id="hf-p" style="width:100%"></div></div><span class="hg-v" id="hv-p">100</span></div>
+    <div class="hg" id="hg-m"><span class="hg-ic">🏛️</span><span class="hg-lbl">Image SEM</span><div class="hg-bar"><div class="hg-fill" id="hf-m" style="width:100%"></div></div><span class="hg-v" id="hv-m">100</span></div>
+  </div>
+  <div id="streak-hud" class="hidden"></div>
+  <div id="streak-panel" class="hidden"></div>
+
+  <div id="cdots"><div class="cdot" id="d0"></div><div class="cdot" id="d1"></div><div class="cdot" id="d2"></div><div class="cdot" id="d3"></div><div class="cdot" id="d4"></div><div class="cdot" id="d5"></div><div class="cdot" id="d6"></div><div class="cdot" id="d7"></div><div class="cdot" id="d8"></div><div class="cdot" id="d9"></div></div>
+  <button id="lex-btn" onclick="openLex()"><span class="lex-btn-ic">📖</span><span class="lex-btn-lbl">Code</span></button>
+  <button id="badges-btn" onclick="Badges.openPanel()"><span class="badges-btn-ic">🏅</span><span class="badges-btn-lbl">Badges</span></button>
+  <button id="sound-btn" onclick="AudioEngine.toggleMute()">🔊</button>
+  <button id="fullscreen-btn" onclick="toggleFullscreen()" title="Plein écran">⛶</button>
+  <button id="btn-home" class="nav-btn hidden" onclick="goHome()" title="Menu principal">⌂ Menu</button>
+  <button id="btn-back" class="nav-btn hidden" onclick="goBack()" title="Dialogue précédent">← Retour</button>
+
+  <!-- Characters -->
+  <div id="chars">
+    <div class="char hidden" id="cl"></div>
+    <div class="char hidden" id="cr"></div>
+  </div>
+
+  <!-- Dialogue -->
+  <div id="dlg" class="hidden" onclick="nextDlg()">
+    <div class="dlg-spk-row"><div class="dlg-spk-dot"></div><div class="dlg-speaker" id="dlg-spk">Narrateur</div></div>
+    <div class="dlg-text" id="dlg-txt"></div>
+    <div class="dlg-hint">▼ cliquer</div>
+  </div>
+
+  <!-- Investigation -->
+  <div id="inv" class="hidden">
+    <div class="inv-hdr"><span>🔍 Investigation — Examinez tous les indices</span></div>
+    <div class="inv-items" id="inv-items"></div>
+    <button class="inv-go" id="inv-go" onclick="endInvestigation()" disabled>Procéder au choix →</button>
+  </div>
+
+  <!-- Clue popup -->
+  <div id="clue-pop">
+    <div class="clue-inner" id="clue-inner"></div>
+  </div>
+
+  <!-- Micro-décisions -->
+  <div id="micro-panel" class="hidden">
+    <div class="micro-hdr">⚡ MOMENT CLÉ</div>
+    <div class="micro-sub">Votre réaction influencera la suite</div>
+    <div class="micro-sit" id="micro-sit"></div>
+    <div class="micro-btns-row">
+      <button class="micro-btn" onclick="chooseMicro(0)"><span class="micro-desc" id="m0d"></span></button>
+      <button class="micro-btn" onclick="chooseMicro(1)"><span class="micro-desc" id="m1d"></span></button>
+      <button class="micro-btn" onclick="chooseMicro(2)"><span class="micro-desc" id="m2d"></span></button>
+    </div>
+  </div>
+
+  <!-- Choices -->
+  <div id="choices" class="hidden">
+    <div class="choices-hdr">⚖️ DÉCISION FINALE</div>
+    <div class="choices-pressure" id="choices-pressure"></div>
+    <div class="choices-list">
+      <button class="choice" onclick="choose(0)"><div class="choice-letter">A</div><div class="choice-desc" id="c0d"></div></button>
+      <button class="choice" onclick="choose(1)"><div class="choice-letter">B</div><div class="choice-desc" id="c1d"></div></button>
+      <button class="choice" onclick="choose(2)"><div class="choice-letter">C</div><div class="choice-desc" id="c2d"></div></button>
+    </div>
+    <button id="sos-btn" onclick="openSOS()">⚖️ Besoin d'un éclairage juridique ?</button>
+  </div>
+
+  <!-- SOS Déontologue panel -->
+  <div id="sos-panel">
+    <div class="sos-inner">
+      <button class="sos-close" onclick="closeSOS()">✕</button>
+      <div class="sos-hdr">
+        <span class="sos-hdr-ic">⚖️</span>
+        <div>
+          <div class="sos-hdr-title">SOS Déontologue</div>
+          <div class="sos-hdr-sub">Aide à la décision — sans conséquence sur votre score</div>
+        </div>
+      </div>
+      <div id="sos-content"></div>
+    </div>
+  </div>
+
+  <!-- Verdict -->
+  <div id="verdict"><div class="vd-inner" id="vd-inner"></div></div>
+
+  <!-- Fiche récapitulative -->
+  <div id="recap"><div class="recap-inner" id="recap-inner"></div></div>
+
+  <!-- Chapter title -->
+  <div id="chtitle"><div class="cht-num" id="ct-num"></div><div class="cht-line"></div><div class="cht-name" id="ct-name"></div><div class="cht-sub" id="ct-sub"></div></div>
+
+  <!-- Context -->
+  <div id="ctx"><div class="ctx-inner" id="ctx-inner"></div></div>
+
+  <!-- Choix tutoriel — affiché après le prologue, première session -->
+  <div id="tuto-choice">
+    <div class="tuto-choice-inner">
+      <div class="tuto-choice-title">Avant de commencer votre mission</div>
+      <div class="tuto-choice-sub">Prenez 2 minutes pour découvrir comment fonctionne le jeu — ou plongez directement dans la carte de la SEM.</div>
+      <button id="tuto-choice-yes" class="tuto-choice-btn tuto-choice-primary">Suivre le tutoriel <span>(recommandé)</span> →</button>
+      <button id="tuto-choice-skip" class="tuto-choice-btn tuto-choice-secondary">Commencer l'aventure</button>
+    </div>
+  </div>
+
+  <!-- Tutorial overlay + callout + skip -->
+  <div id="tuto-overlay"></div>
+  <div id="tuto-callout" class="tuto-callout">
+    <div class="tuto-callout-title" id="tuto-callout-title"></div>
+    <div class="tuto-callout-text" id="tuto-callout-text"></div>
+  </div>
+  <button id="tuto-skip" onclick="Tutorial.skip()">Passer le tutoriel →</button>
+
+  <!-- Home overlay -->
+  <div id="home-overlay">
+    <div class="home-inner">
+      <div class="home-logo">⚖️</div>
+      <div class="home-title">Projet Horizon</div>
+      <div class="home-sub">Formation Anticorruption · Loi Sapin II</div>
+      <div class="home-player-row" id="home-player-row">
+        <span class="home-player-dot"></span>
+        <span id="home-player-name"></span>
+      </div>
+      <div class="home-actions">
+        <button class="home-btn home-btn-primary" onclick="closeHomeOverlay()">▶ Reprendre la partie</button>
+        <button class="home-btn" onclick="Checkpoint.sauvegarderAvecConfirm()">💾 Sauvegarder</button>
+        <button class="home-btn" onclick="homeGoMap()">🗺 Retour à la carte des services</button>
+        <button class="home-btn" onclick="openDemoMode()">🎮 Mode démo — changer d'affaire</button>
+        <button class="home-btn" onclick="window.open('dashboard.html','_blank')">📊 Espace formateur</button>
+        <button class="home-btn home-btn-rgpd" onclick="homeEffacerDonnees()">🗑 Effacer mes données</button>
+        <button class="home-btn home-btn-danger" onclick="homeQuit()">✕ Quitter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accueil — écran intermédiaire après l'intro -->
+  <div id="accueil-overlay">
+    <div class="accueil-inner">
+      <div class="accueil-logo">⚖️</div>
+      <div class="accueil-eyebrow">Serious Game · Formation Anticorruption · Loi Sapin II</div>
+      <div class="accueil-title">Projet Horizon</div>
+      <div class="accueil-rule"></div>
+      <div class="accueil-player-badge" id="accueil-player-badge">
+        <span class="accueil-player-dot"></span>
+        <span id="accueil-player-name"></span>
+        <button class="accueil-edit-btn" onclick="accueilEditName()" title="Modifier mon profil">✏️</button>
+      </div>
+      <div class="accueil-edit-form accueil-hidden" id="accueil-edit-form">
+        <input type="text" id="accueil-prenom" class="accueil-input" placeholder="Prénom">
+        <input type="text" id="accueil-nom" class="accueil-input" placeholder="Identifiant SEM (ex : clarade)">
+        <button class="accueil-save-btn" onclick="accueilSaveName()">Valider</button>
+      </div>
+      <div class="accueil-actions">
+        <button class="accueil-btn accueil-btn-mission" onclick="accueilStartMission()">
+          <span class="accueil-btn-ic">▶</span>
+          <span class="accueil-btn-content">
+            <span class="accueil-btn-main">Commencer votre mission</span>
+            <span class="accueil-btn-sub">Parcours complet · 13 affaires</span>
+          </span>
+        </button>
+        <button class="accueil-btn accueil-btn-reprendre" id="accueil-btn-reprendre"
+                onclick="Checkpoint.restaurer(Checkpoint.charger())" style="display:none">
+          <span class="accueil-btn-ic">📂</span>
+          <span class="accueil-btn-content">
+            <span class="accueil-btn-main">Reprendre la partie</span>
+            <span class="accueil-btn-sub" id="accueil-reprendre-sub"></span>
+          </span>
+        </button>
+        <button class="accueil-btn accueil-btn-demo" onclick="accueilOpenDemo()">
+          <span class="accueil-btn-ic">🎮</span>
+          <span class="accueil-btn-content">
+            <span class="accueil-btn-main">Mode démo</span>
+            <span class="accueil-btn-sub">Accédez directement à n'importe quelle affaire</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demo mode — sélecteur de chapitre libre -->
+  <div id="demo-overlay">
+    <div class="demo-wrap">
+      <div class="demo-hdr">
+        <div>
+          <div class="demo-hdr-title">🎮 Mode démo</div>
+          <div class="demo-hdr-sub">Sélectionnez une affaire pour y accéder directement — jauges réinitialisées à 100</div>
+        </div>
+        <button class="demo-hdr-close" onclick="closeDemoMode()">✕ Fermer</button>
+      </div>
+      <div class="demo-grid" id="demo-grid"></div>
+      <div class="demo-quiz-row">
+        <button class="demo-quiz-btn" onclick="closeDemoMode(); Quiz.start()">📋 Réaliser le quiz final</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Badge toast -->
+  <div id="badge-toast">
+    <span id="badge-toast-em"></span>
+    <div><div class="badge-toast-title">Badge débloqué !</div><div id="badge-toast-label"></div></div>
+  </div>
+
+  <!-- Notification sauvegarde checkpoint -->
+  <div id="notif-save"></div>
+
+  <!-- Panel badges -->
+  <div id="badges-panel">
+    <div class="badges-inner">
+      <div class="badges-hdr">🏅 Récompenses</div>
+      <div class="badges-title">Vos badges</div>
+      <div class="badges-sub-text">Débloqués au fil de vos parties</div>
+      <div id="badges-grid" class="badges-grid"></div>
+      <button class="badges-close" onclick="Badges.closePanel()">✕ Fermer</button>
+    </div>
+  </div>
+
+  <!-- Lexique -->
+  <div id="lexique">
+    <div class="lex-inner">
+      <div class="lex-hdr">📖 Lexique de l'intégrité</div>
+      <div class="lex-sub">Définitions simplifiées des infractions d'atteinte à la probité</div>
+      <table class="lex-table">
+        <thead><tr><th>Infraction</th><th>Définition simplifiée</th></tr></thead>
+        <tbody>
+          <tr><td><div class="lex-infraction">Prise illégale d'intérêts</div></td><td><div class="lex-def">Quand un agent profite de sa fonction pour favoriser un proche ou une affaire dans laquelle il a un intérêt personnel.</div></td></tr>
+          <tr><td><div class="lex-infraction">Favoritisme</div></td><td><div class="lex-def">Ne pas respecter l'égalité entre les candidats lors d'un marché public pour en avantager un en particulier.</div></td></tr>
+          <tr><td><div class="lex-infraction">Corruption passive</div></td><td><div class="lex-def">Accepter un avantage (argent, cadeau, service) pour accomplir ou omettre un acte dans le cadre de sa fonction.</div></td></tr>
+          <tr><td><div class="lex-infraction">Corruption active</div></td><td><div class="lex-def">Proposer ou donner un avantage à quelqu'un pour qu'il use de sa fonction à votre profit.</div></td></tr>
+          <tr><td><div class="lex-infraction">Détournement de fonds</div></td><td><div class="lex-def">Utiliser l'argent ou les biens de la structure à des fins personnelles ou pour des dépenses non justifiées.</div></td></tr>
+          <tr><td><div class="lex-infraction">Concussion</div></td><td><div class="lex-def">Percevoir ou laisser percevoir une somme que l'on sait non due, ou renoncer à réclamer ce qui est dû.</div></td></tr>
+          <tr><td><div class="lex-infraction">Trafic d'influence</div></td><td><div class="lex-def">Promettre ou recevoir un avantage pour user de son influence (réelle ou supposée) afin d'obtenir une décision d'une autorité.</div></td></tr>
+          <tr><td><div class="lex-infraction">Contrat de complaisance</div></td><td><div class="lex-def">Payer une facture ou signer un contrat sans contrepartie réelle identifiable, dans le but de dissimuler un avantage illicite ou un détournement de fonds.</div></td></tr>
+        </tbody>
+      </table>
+      <button class="lex-close" onclick="closeLex()">✕ Fermer le lexique</button>
+    </div>
+  </div>
+
+  <!-- Écran statistiques personnelles -->
+  <div id="stats-perso"></div>
+
+  <!-- Panneau replay annoté (glisse depuis le bas/droite) -->
+  <div id="replay-panel"></div>
+
+  <!-- End screen -->
+  <div id="end"><div class="end-wrap" id="end-wrap"></div></div>
+
+  <!-- Quiz de validation des acquis -->
+  <div id="quiz-overlay">
+    <div id="quiz-wrap"></div>
+  </div>
+
+  <!-- Service selection (hidden, for compatibility) -->
+  <div id="service-select"></div>
+
+  <!-- Annonce quiz final (s'affiche une seule fois, avant la carte) -->
+  <div id="quiz-annonce"></div>
+
+  <!-- Carte interactive de sélection du service -->
+  <div id="map-select"></div>
+
+  <!-- Parcours personnalisé -->
+  <div id="parcours"></div>
+
+  <!-- Écran intermédiaire mi-parcours -->
+  <div id="intermediate"></div>
+
+  <!-- Portail mot de passe -->
+  <div id="password-gate">
+    <div class="pg-card">
+      <div class="pg-logo">⚖️</div>
+      <div class="pg-eyebrow">Serious Game · Formation Anticorruption</div>
+      <div class="pg-title">Projet Horizon</div>
+      <div class="pg-rule"></div>
+      <div class="pg-form">
+        <input type="password" id="pg-input" class="pg-input" placeholder="Mot de passe" autocomplete="current-password">
+        <button class="pg-btn" onclick="checkPassword()">Accéder →</button>
+      </div>
+      <div id="pg-error" class="pg-error"></div>
+    </div>
+  </div>
+
+  <!-- Intro — Option B : Dossier Confidentiel -->
+  <div id="intro">
+    <img id="intro-bg" src="assets/scenes/epilogue.webp" alt="">
+    <div class="intro-stars" id="intro-stars"></div>
+    <div class="intro-folder">
+      <div class="intro-folder-cover">
+        <div class="intro-folder-label">Confidentiel</div>
+      </div>
+      <div class="intro-folder-content">
+        <div class="intro-stamp">Confidentiel</div>
+        <div class="intro-folder-eyebrow">Serious Game · Formation Anticorruption · Loi Sapin II</div>
+        <div class="intro-folder-heading">Projet Horizon</div>
+        <div class="intro-folder-sub">L'Affaire du Nouveau Centre de Tri</div>
+        <div class="intro-folder-rule"></div>
+        <div class="intro-folder-desc">Vous êtes <strong>chargé(e) de mission</strong> pour superviser l'ouverture d'un centre de valorisation stratégique. À chaque étape, la tentation rôde. Vos décisions détermineront l'avenir de la SEM.</div>
+        <div class="intro-folder-meta">13 affaires · Loi Sapin II</div>
+        <div class="intro-name-row">
+          <input type="text" id="intro-prenom" class="intro-name-input" placeholder="Prénom *" maxlength="40" autocomplete="given-name" oninput="_verifierIntroReady()">
+          <input type="text" id="intro-nom" class="intro-name-input" placeholder="Identifiant SEM * (ex : clarade)" maxlength="40" autocomplete="username" oninput="_verifierIntroReady()">
+        </div>
+        <p class="rgpd-mention"><i class="ti ti-lock"></i> Votre prénom et identifiant SEM sont utilisés uniquement à des fins de suivi pédagogique interne. Conformément au RGPD, vous pouvez effacer vos données à tout moment depuis le menu du jeu.</p>
+        <button class="intro-folder-cta" id="intro-cta" onclick="startGame()" disabled>▶ Ouvrir le dossier</button>
+        <button class="intro-trainer-link" onclick="openTrainerModal()">🔒 Espace formateur</button>
+        <div class="intro-credit" id="intro-credit">© 2025 Cécile Larade</div>
+        <!-- Décommenter et mettre à jour lors d'une mise à jour notable -->
+        <!-- <div class="intro-update">Mis à jour le 25 mai 2026</div> -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal accès formateur -->
+  <div id="trainer-modal">
+    <div class="trainer-modal-inner">
+      <div class="trainer-modal-title">Espace formateur</div>
+      <div class="trainer-modal-sub">Saisissez votre code d'accès</div>
+      <input type="password" id="trainer-code" class="trainer-modal-input" placeholder="Code formateur" autocomplete="off">
+      <div class="trainer-modal-btns">
+        <button class="trainer-modal-cancel" onclick="closeTrainerModal()">Annuler</button>
+        <button class="trainer-modal-submit" onclick="checkTrainerCode()">Accéder →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Configuration centralisée (doit être chargée en premier) -->
+<script src="config.js"></script>
+
+<!-- Préchargement des scènes (démarre immédiatement) -->
+<script src="js/preloader.js"></script>
+
+<!-- JS données -->
+<script src="js/data/services.js"></script>
+<script src="js/data/prologue.js"></script>
+<script src="js/data/chapters.js"></script>
+<script src="js/data/epilogue-data.js"></script>
+<script src="js/data/mini-jeux-data.js"></script>
+<script src="js/data/lexique-data.js"></script>
+<script src="js/data/pressions-data.js"></script>
+
+<!-- JS moteur -->
+<script defer src="js/scenes.js"></script>
+<script defer src="js/hud.js"></script>
+<script defer src="js/characters.js"></script>
+<script defer src="js/dialogue.js"></script>
+<script defer src="js/data/reflexe-data.js"></script>
+<script defer src="js/reflexe-pro.js"></script>
+<script defer src="js/game-over.js"></script>
+<script defer src="js/choices.js"></script>
+<script defer src="js/timer-pression.js"></script>
+<script defer src="js/epilogue.js"></script>
+<script defer src="js/stats-perso.js"></script>
+<script defer src="js/data/replay-texts.js"></script>
+<script defer src="js/replay.js"></script>
+<script defer src="js/microdecisions.js"></script>
+<script defer src="js/lexique.js"></script>
+<script defer src="js/sos.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script defer src="js/supabase.js"></script>
+<script defer src="js/tracker.js"></script>
+<script defer src="js/memoire.js"></script>
+<script defer src="js/checkpoint.js"></script>
+<script defer src="js/badges.js"></script>
+<script defer src="js/audio.js"></script>
+<script defer src="js/tutorial.js"></script>
+<script defer src="js/map-select.js"></script>
+<script defer src="js/quiz.js"></script>
+<script defer src="js/mini-jeu.js"></script>
+<script defer src="js/streak.js"></script>
+<script defer src="js/main.js"></script>
+
+<!-- Panneau debug — chargé uniquement si ?debug dans l'URL ou Ctrl+Shift+D -->
+<script>
+(function () {
+  function loadDebug() {
+    if (window._debugLoaded) return;
+    window._debugLoaded = true;
+    var s = document.createElement('script');
+    s.src = 'js/debug.js';
+    document.body.appendChild(s);
+  }
+  // Chargement automatique via ?debug
+  if (new URLSearchParams(location.search).has('debug')) {
+    loadDebug();
+  }
+  // Chargement à la demande via Ctrl+Shift+D
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+      if (!window._debugLoaded) {
+        loadDebug();
+      } else {
+        window.DebugPanel && DebugPanel.toggle();
+      }
+    }
+  });
+})();
+</script>
+
+<!-- ── Service Worker (PWA offline) ─────────────────────────── -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => {
+      console.warn('[SW] Enregistrement échoué :', err);
+    });
+  });
+}
+</script>
+</body>
+</html>

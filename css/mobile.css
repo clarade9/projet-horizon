@@ -1,0 +1,410 @@
+/* ═══════════════════════════════════════
+   MOBILE — Projet Horizon
+   Cible : écrans ≤ 640px (smartphones)
+   Chargé en dernier → surcharge tout le reste
+   ═══════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ── HUD ─────────────────────────────── */
+  #hud {
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    right: 8px;
+    gap: 3px;
+  }
+  .hg {
+    width: 130px;
+    max-width: 130px;
+    padding: 3px 8px 3px 6px;
+    gap: 4px;
+  }
+  .hg-ic  { font-size: 10px; }
+  .hg-lbl { display: none; }           /* masqué : trop étroit */
+  .hg-v   { font-size: 9px; }
+
+  /* ── Dots de chapitres ───────────────── */
+  /* Repositionnés sous le bouton CODE pour éviter tout chevauchement */
+  #cdots {
+    top: calc(env(safe-area-inset-top, 0px) + 76px);
+    left: 8px;
+    gap: 6px;
+  }
+  /* Zone de clic agrandie par pseudo-élément invisible */
+  .cdot {
+    width: 10px;
+    height: 10px;
+    position: relative;
+  }
+  .cdot::before {
+    content: '';
+    position: absolute;
+    inset: -14px;
+  }
+
+  /* ── Bouton CODE ─────────────────────── */
+  #lex-btn {
+    top: calc(env(safe-area-inset-top,0px) + 10px);
+    left: calc(env(safe-area-inset-left,0px) + 8px);
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    padding: 0;
+  }
+  #lex-btn .lex-btn-ic  { font-size: 24px; }
+  #lex-btn .lex-btn-lbl { font-size: 9px; }
+
+  /* ── Bouton son : haut droite sous le HUD ──────────────── */
+  #sound-btn {
+    top: calc(env(safe-area-inset-top,0px) + 104px);
+    right: calc(env(safe-area-inset-right,0px) + 14px);
+    bottom: auto;
+    left: auto;
+  }
+
+  /* ── Intro card : scrollable si contenu > 100dvh ─────── */
+  #intro {
+    align-items: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .intro-folder {
+    margin: calc(env(safe-area-inset-top,0px) + 20px) auto calc(env(safe-area-inset-bottom,0px) + 20px);
+    flex-shrink: 0;
+    max-width: 94vw;
+  }
+  .intro-folder-content {
+    padding: 22px 18px 20px;
+  }
+
+  /* ── Personnages ─────────────────────── */
+  .char-portrait {
+    max-height: 38vh; /* filet de sécurité — hauteur effective via heightMobile dans characters.js */
+  }
+  .char-badge { font-size: 8px; padding: 4px 10px; }
+  .char-ring {
+    width: clamp(48px, 6vh, 72px);
+    height: clamp(48px, 6vh, 72px);
+  }
+
+  /* ── Dialogue ────────────────────────── */
+  #dlg {
+    width: 94vw;
+    padding: 14px 16px 14px;
+    bottom: calc(5.5vh + 8px + env(safe-area-inset-bottom, 0px));
+    border-radius: 14px;
+  }
+  .dlg-text    { font-size: 14px; min-height: 36px; }
+  .dlg-speaker { font-size: 9px; }
+  .dlg-hint    { font-size: 8px; bottom: 10px; right: 14px; }
+
+  /* ── Investigation ───────────────────── */
+  #inv {
+    width: 94vw;
+    bottom: calc(5.5vh + 8px + env(safe-area-inset-bottom, 0px));
+  }
+  /* En mode hotspot : panneau en haut, centré */
+  #inv.hotspot-mode {
+    bottom: auto;
+    top: calc(5.5vh + 82px);
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 92vw;
+  }
+  .inv-intro { display: none; } /* trop long sur mobile hotspot */
+  .inv-counter        { font-size: 13px; }
+  .inv-counter strong { font-size: 16px; }
+  /* Zones hotspot : surface tactile élargie */
+  .hs-zone {
+    touch-action: manipulation;
+  }
+  .hs-zone::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+  }
+  .inv-items {
+    grid-template-columns: 1fr; /* 1 colonne sur mobile */
+    gap: 6px;
+  }
+  .inv-item {
+    padding: 12px 14px;
+    min-height: 48px;
+  }
+  .inv-ic  { font-size: 20px; }
+  .inv-lbl { font-size: 13px; }
+  .inv-go  { padding: 13px; font-size: 14px; min-height: 48px; }
+  /* Animation loupe au premier lancement */
+  #inv-loupe-hint {
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .inv-loupe-icon {
+    font-size: 72px;
+    animation: loupeSearch 2.2s ease-in-out forwards;
+  }
+  @keyframes loupeSearch {
+    0%   { transform: translate(-30%, 10%) scale(0.8); opacity: 0; }
+    20%  { opacity: 1; }
+    50%  { transform: translate(20%, -15%) scale(1.15); }
+    80%  { opacity: 1; }
+    100% { transform: translate(-10%, 20%) scale(0.9); opacity: 0; }
+  }
+
+  /* ── Popup indice ────────────────────── */
+  #clue-pop { padding: 10px; overflow-y: auto; }
+  .clue-inner {
+    max-width: 100%;
+    padding: 18px 16px;
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    max-height: none;
+    margin: auto;
+  }
+  .clue-title  { font-size: 17px; }
+  .clue-body   { font-size: 13px; }
+  .clue-alert  { font-size: 12px; padding: 6px 12px; }
+  .clue-close  { padding: 12px; min-height: 48px; font-size: 14px; }
+
+  /* ── Choix ───────────────────────────── */
+  #choices {
+    width: 94vw;
+    bottom: calc(5.5vh + 8px + env(safe-area-inset-bottom, 0px));
+    /* Hauteur max = espace dispo entre bas du HUD et bas de l'écran */
+    max-height: calc(100dvh - 5.5vh - 8px - env(safe-area-inset-bottom, 0px) - 56px);
+    display: flex;
+    flex-direction: column;
+  }
+  /* Pression + header = taille fixe, la liste des choix absorbe le reste */
+  .choices-pressure {
+    font-size: 12px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .choices-hdr { margin-bottom: 2px; flex-shrink: 0; }
+  .choices-sub { margin-bottom: 6px; flex-shrink: 0; }
+  /* Zone scrollable uniquement si ça déborde (cas exceptionnel) */
+  .choices-list {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .choice {
+    padding: 10px 12px;
+    min-height: 0;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+  .choice-letter {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    font-size: 12px;
+  }
+  .choice-desc { font-size: 13px; line-height: 1.4; }
+  #sos-btn { font-size: 12px; padding: 10px 14px; min-height: 40px; margin-top: 6px; flex-shrink: 0; }
+
+  /* ── Micro-décisions ─────────────────── */
+  #micro-panel {
+    width: 94vw;
+    bottom: calc(5.5vh + 8px + env(safe-area-inset-bottom, 0px));
+  }
+  .micro-sit { font-size: 12px; padding: 10px 13px; }
+  .micro-btn {
+    padding: 11px 13px;
+    min-height: 48px;
+    gap: 10px;
+  }
+  .micro-letter {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    font-size: 11px;
+  }
+  .micro-desc { font-size: 13px; }
+
+  /* ── Verdict ─────────────────────────── */
+  #verdict { padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); }
+  .vd-inner {
+    max-width: 100%;
+    padding: 20px 18px 16px;
+    border-radius: 20px;
+    max-height: calc(100dvh - var(--hauteur-barre, 56px) - 48px - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .vd-title      { font-size: 20px; }
+  .vd-consequence{ font-size: 13px; }
+  .vd-legal-text { font-size: 12px; }
+  .vd-btn {
+    position: sticky;
+    bottom: 0;
+    margin: 12px 0 0;
+    border-radius: 99px;
+    width: 100%;
+    font-size: 13px;
+    min-height: 48px;
+  }
+
+  /* ── Fiche récap ─────────────────────── */
+  #recap { padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); align-items: center; }
+  .recap-inner {
+    max-width: 100%;
+    padding: 20px 18px 16px;
+    border-radius: 20px;
+    max-height: calc(100dvh - 48px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .rcp-eyebrow { font-size: 9px; margin-bottom: 10px; }
+  .rcp-risk    { font-size: 18px; margin-bottom: 8px; }
+  .rcp-def     { font-size: 12px; margin-bottom: 14px; padding-bottom: 14px; }
+  .rcp-gestures-title { font-size: 11px; margin-bottom: 8px; }
+  .rcp-gestures       { gap: 6px; margin-bottom: 14px; }
+  .rcp-gestures li    { font-size: 12px; }
+  .rcp-reallife       { padding: 12px 14px; margin-bottom: 0; }
+  .rcp-rl-body        { font-size: 12px; }
+  /* Bouton sticky en bas du panneau — arrondi + safe area gérée par le parent */
+  .rcp-btn {
+    position: sticky;
+    bottom: 0;
+    margin: 12px 0 0;
+    border-radius: 99px;
+    padding: 14px 24px;
+    font-size: 14px;
+    min-height: 52px;
+  }
+
+  /* ── Contexte ────────────────────────── */
+  #ctx { padding: 10px; overflow-y: auto; }
+  .ctx-inner {
+    max-width: 100%;
+    padding: 18px 16px;
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    max-height: none;
+    margin: auto; /* centre quand le contenu est court, scrollable sinon */
+  }
+  .ctx-title { font-size: 19px; }
+  .ctx-body  { font-size: 14px; }
+  .ctx-btn   { padding: 12px 20px; font-size: 14px; min-height: 48px; width: 100%; }
+
+  /* ── Titre de chapitre ───────────────── */
+  .cht-name { font-size: clamp(20px, 6vw, 36px); }
+  .cht-sub  { font-size: 13px; }
+
+  /* ── Lexique ─────────────────────────── */
+  #lexique {
+    align-items: flex-start;
+    padding: 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .lex-inner {
+    max-width: 100%;
+    padding: 16px 14px;
+    border-radius: 16px;
+    max-height: none;
+    overflow-y: visible;
+  }
+  .lex-table th,
+  .lex-table td { font-size: 12px; padding: 8px; }
+  .lex-close { min-height: 48px; font-size: 14px; }
+
+  /* ── SOS Déontologue ─────────────────── */
+  .sos-inner { padding: 16px 14px; border-radius: 16px; }
+
+  /* ── Écran de fin ────────────────────── */
+  #end { padding: 10px; overflow-y: auto; }
+  .end-wrap {
+    max-width: 100%;
+    padding: 20px 16px;
+    border-radius: 16px;
+    max-height: none;
+    margin: auto;
+  }
+  /* Jauges en colonne sur mobile — évite la coupure de la 3e card */
+  .end-gauges {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  /* ── Sélection service ───────────────── */
+  .svc-wrap  { padding: 20px 16px; }
+  .svc-title { font-size: 20px; }
+  .svc-grid  { grid-template-columns: 1fr; gap: 8px; }
+  .svc-btn   { padding: 14px 16px; min-height: 52px; }
+  .svc-cta   { min-height: 52px; font-size: 15px; }
+
+  /* ── Parcours ────────────────────────── */
+  .prc-wrap  { padding: 20px 16px; }
+  .prc-title { font-size: 20px; }
+  .prc-cards-priority,
+  .prc-cards-bonus,
+  .prc-cards-full { grid-template-columns: 1fr; gap: 8px; }
+  .prc-cta   { min-height: 52px; font-size: 15px; }
+
+  /* ── Écran intermédiaire ─────────────── */
+  .inter-wrap  { padding: 24px 16px; }
+  .inter-title { font-size: 22px; }
+  .inter-cta,
+  .inter-skip  { min-height: 52px; font-size: 14px; }
+
+  /* ── Inputs : 16px pour bloquer le zoom iOS au focus ─── */
+  input, select, textarea, .pg-input {
+    font-size: 16px !important;
+  }
+
+  /* ── Bouton BADGES : identique à CODE ────────────────── */
+  #badges-btn {
+    top: calc(env(safe-area-inset-top,0px) + 10px);
+    left: calc(env(safe-area-inset-left,0px) + 72px); /* 8px + 56px (lex) + 8px gap */
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    padding: 0;
+  }
+  #badges-btn .badges-btn-ic  { font-size: 24px; }
+  #badges-btn .badges-btn-lbl { font-size: 9px; }
+
+  /* ── Personnage PNJ centré sur mobile ────────────────── */
+  #cr {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%);
+    bottom: calc(5.5vh + 110px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* ── Boutons nav : coins inférieurs, position fixed ───── */
+  .nav-btn {
+    position: fixed;
+    bottom: 24px;
+    height: 44px;
+    padding: 0 20px;
+    width: auto;
+    min-width: unset;
+    min-height: unset;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 12, 22, .90);
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 99px;
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,.4);
+  }
+  #btn-home { left: 16px; right: auto; }
+  #btn-back { right: 16px; left: auto; }
+
+} /* fin @media 640px */

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Informations légales — Projet Horizon</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #1B2A4A;
+      color: #ffffff;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: rgba(27, 42, 74, 0.95);
+      border-bottom: 2px solid #76B837;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header a {
+      color: #76B837;
+      text-decoration: none;
+      font-size: 14px;
+      font-family: 'Space Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    .header a:hover { text-decoration: underline; }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #ffffff;
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(135deg, #29306F 0%, #1B2A4A 60%, #0f1a2e 100%);
+      border-bottom: 3px solid #76B837;
+      padding: 48px 24px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(24px, 4vw, 36px);
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .hero p {
+      color: #AABBCC;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .hero .version {
+      font-size: 13px;
+      color: #76B837;
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* Nav tabs */
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 16px 24px 0;
+      background: #1B2A4A;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto;
+    }
+
+    .nav-tab {
+      padding: 10px 20px;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+      color: #AABBCC;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .nav-tab:hover { color: #ffffff; }
+
+    .nav-tab.active {
+      color: #ffffff;
+      border-bottom-color: #76B837;
+      background: rgba(118, 184, 55, 0.1);
+    }
+
+    /* Content */
+    .content {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Sections */
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .section h2 {
+      font-family: 'Space Mono', monospace;
+      font-size: 20px;
+      color: #76B837;
+      border-bottom: 1px solid rgba(118, 184, 55, 0.3);
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+
+    .section h3 {
+      font-size: 16px;
+      color: #ffffff;
+      margin-bottom: 10px;
+      margin-top: 20px;
+    }
+
+    .section p {
+      color: #CCDDEE;
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 12px;
+      text-align: justify;
+    }
+
+    .section ul {
+      margin: 8px 0 12px 20px;
+    }
+
+    .section ul li {
+      color: #CCDDEE;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 6px;
+    }
+
+    /* Info box */
+    .info-box {
+      background: rgba(118, 184, 55, 0.08);
+      border-left: 4px solid #76B837;
+      border-radius: 0 8px 8px 0;
+      padding: 16px 20px;
+      margin: 16px 0;
+    }
+
+    .info-box p {
+      color: #AACCAA;
+      font-size: 14px;
+      margin: 0;
+    }
+
+    /* Warning box */
+    .warn-box {
+      background: rgba(229, 16, 79, 0.08);
+      border-left: 4px solid #E5104F;
+      border-radius: 0 8px 8px 0;
+      padding: 16px 20px;
+      margin: 16px 0;
+    }
+
+    .warn-box p {
+      color: #FFAAAA;
+      font-size: 14px;
+      margin: 0;
+    }
+
+    /* Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    .data-table th {
+      background: #29306F;
+      color: #ffffff;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: bold;
+    }
+
+    .data-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      color: #CCDDEE;
+      vertical-align: top;
+    }
+
+    .data-table tr:nth-child(even) td {
+      background: rgba(255,255,255,0.03);
+    }
+
+    /* Placeholder */
+    .placeholder {
+      display: inline-block;
+      background: rgba(255,255,255,0.08);
+      border: 1px dashed rgba(255,255,255,0.2);
+      border-radius: 4px;
+      padding: 2px 8px;
+      color: #AABBCC;
+      font-style: italic;
+      font-size: 14px;
+    }
+
+    /* Footer */
+    .page-footer {
+      background: rgba(0,0,0,0.3);
+      border-top: 2px solid #76B837;
+      padding: 24px;
+      text-align: center;
+      margin-top: 60px;
+    }
+
+    .page-footer p {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .page-footer a {
+      color: #76B837;
+      text-decoration: none;
+      font-size: 13px;
+    }
+
+    /* Retour bouton */
+    .btn-retour {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #76B837;
+      color: #1B2A4A;
+      font-weight: bold;
+      font-size: 14px;
+      padding: 10px 20px;
+      border-radius: 99px;
+      text-decoration: none;
+      margin-top: 32px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-retour:hover {
+      transform: scale(1.03);
+      box-shadow: 0 4px 16px rgba(118, 184, 55, 0.3);
+    }
+
+    @media (max-width: 640px) {
+      .nav-tabs { padding: 12px 12px 0; }
+      .nav-tab { padding: 8px 14px; font-size: 13px; }
+      .content { padding: 24px 16px 60px; }
+      .section h2 { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <a href="index.html">← Retour au jeu</a>
+    <span class="header-title">PROJET HORIZON</span>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1>Informations légales</h1>
+    <p>Serious Game Anticorruption — <span class="placeholder">[Nom SEM]</span></p>
+    <p class="version">Dernière mise à jour : <span class="placeholder">[Date]</span></p>
+  </div>
+
+  <!-- Navigation tabs -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('ml')">Mentions légales</button>
+    <button class="nav-tab" onclick="showTab('rgpd')">Politique de confidentialité</button>
+    <button class="nav-tab" onclick="showTab('cgu')">CGU</button>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ════════════════════════════
+         MENTIONS LÉGALES
+    ════════════════════════════ -->
+    <div id="ml" class="tab-content active">
+
+      <div class="section">
+        <h2>1. Éditeur du site</h2>
+        <p>Conformément aux dispositions de la loi n°2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique :</p>
+        <table class="data-table">
+          <tr><th>Information</th><th>Valeur</th></tr>
+          <tr><td>Dénomination sociale</td><td><span class="placeholder">[Nom complet de la SEM]</span></td></tr>
+          <tr><td>Forme juridique</td><td><span class="placeholder">[Forme juridique]</span></td></tr>
+          <tr><td>Capital social</td><td><span class="placeholder">[Montant]</span></td></tr>
+          <tr><td>Siège social</td><td><span class="placeholder">[Adresse complète]</span></td></tr>
+          <tr><td>SIRET</td><td><span class="placeholder">[Numéro SIRET]</span></td></tr>
+          <tr><td>N° TVA</td><td><span class="placeholder">[Numéro TVA intracommunautaire]</span></td></tr>
+          <tr><td>Contact</td><td><span class="placeholder">[Email de contact]</span></td></tr>
+          <tr><td>Directeur de la publication</td><td><span class="placeholder">[Nom et prénom]</span></td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>2. Hébergeur</h2>
+        <table class="data-table">
+          <tr><th>Information</th><th>Valeur</th></tr>
+          <tr><td>Raison sociale</td><td>Vercel Inc.</td></tr>
+          <tr><td>Adresse</td><td>340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis</td></tr>
+          <tr><td>Site web</td><td>https://vercel.com</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>3. Propriété intellectuelle</h2>
+        <p>L'ensemble du contenu du site Projet Horizon — textes, dialogues, scénarios, personnages, visuels, sons et musiques — est protégé par les lois françaises et internationales relatives à la propriété intellectuelle.</p>
+        <p><strong>© 2026 — <span class="placeholder">[Nom SEM]</span> — Conception : Cécile Larade. Tous droits réservés.</strong></p>
+        <p>Toute reproduction, représentation, modification, publication ou adaptation, totale ou partielle, est interdite sans autorisation écrite préalable de l'éditeur.</p>
+      </div>
+
+      <div class="section">
+        <h2>4. Responsabilité</h2>
+        <p>L'éditeur s'efforce d'assurer l'exactitude des informations diffusées. Les scénarios présentés dans Projet Horizon sont <strong>fictifs et à visée exclusivement pédagogique</strong>. Toute ressemblance avec des situations réelles serait purement fortuite.</p>
+      </div>
+
+      <div class="section">
+        <h2>5. Droit applicable</h2>
+        <p>Les présentes mentions légales sont soumises au droit français. En cas de litige, les tribunaux français seront seuls compétents.</p>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════
+         RGPD
+    ════════════════════════════ -->
+    <div id="rgpd" class="tab-content">
+
+      <div class="section">
+        <h2>1. Responsable du traitement</h2>
+        <table class="data-table">
+          <tr><th>Information</th><th>Valeur</th></tr>
+          <tr><td>Responsable de traitement</td><td><span class="placeholder">[Nom de la SEM]</span></td></tr>
+          <tr><td>Adresse</td><td><span class="placeholder">[Adresse complète]</span></td></tr>
+          <tr><td>DPO / Délégué à la Protection des Données</td><td><span class="placeholder">[Email DPO]</span></td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>2. Données collectées</h2>
+
+        <h3>2.1 Données stockées localement</h3>
+        <p>Votre progression dans le jeu (affaires complétées, jauges, badges, choix) est sauvegardée dans votre navigateur via <strong>localStorage</strong>. Ces données restent sur votre appareil.</p>
+        <div class="info-box">
+          <p>💡 Vous pouvez supprimer ces données à tout moment en vidant le cache de votre navigateur.</p>
+        </div>
+
+        <h3>2.2 Données collectées lors des sessions formateur</h3>
+        <p>Lors du mode formateur en direct, les données suivantes peuvent être collectées :</p>
+        <ul>
+          <li>Prénom saisi lors de la connexion à une session live</li>
+          <li>Réponses aux questions et décisions prises dans le jeu</li>
+          <li>Score obtenu et temps de réponse</li>
+        </ul>
+        <div class="info-box">
+          <p>💡 Ces données sont transmises à notre base de données sécurisée (Supabase, hébergée en Europe — région Irlande).</p>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>3. Finalités et durées de conservation</h2>
+        <table class="data-table">
+          <tr><th>Finalité</th><th>Base légale</th><th>Durée</th></tr>
+          <tr><td>Suivi pédagogique</td><td>Intérêt légitime de l'employeur</td><td>Durée du contrat de travail</td></tr>
+          <tr><td>Animation sessions collectives</td><td>Consentement</td><td>Session + 30 jours</td></tr>
+          <tr><td>Statistiques agrégées</td><td>Intérêt légitime</td><td>12 mois glissants</td></tr>
+          <tr><td>Attestation de participation</td><td>Obligation contractuelle</td><td>5 ans</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>4. Vos droits</h2>
+        <p>Conformément au RGPD, vous disposez des droits suivants :</p>
+        <ul>
+          <li><strong>Accès</strong> — obtenir une copie de vos données</li>
+          <li><strong>Rectification</strong> — corriger des données inexactes</li>
+          <li><strong>Effacement</strong> — demander la suppression de vos données</li>
+          <li><strong>Portabilité</strong> — recevoir vos données dans un format lisible</li>
+          <li><strong>Opposition</strong> — vous opposer au traitement</li>
+        </ul>
+        <p>Pour exercer ces droits : <span class="placeholder">[Email DPO]</span></p>
+        <p>Vous pouvez également introduire une réclamation auprès de la <a href="https://www.cnil.fr" target="_blank" style="color:#76B837">CNIL</a>.</p>
+      </div>
+
+      <div class="section">
+        <h2>5. Sécurité</h2>
+        <ul>
+          <li>Chiffrement des données en transit (HTTPS/TLS)</li>
+          <li>Chiffrement des données au repos sur Supabase (AES-256)</li>
+          <li>Accès aux données restreint aux personnes habilitées</li>
+          <li>Suppression automatique des sessions live après 30 jours</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>6. Cookies</h2>
+        <div class="info-box">
+          <p>✅ Projet Horizon n'utilise pas de cookies de traçage ou de publicité. Aucun cookie tiers n'est déposé lors de votre navigation.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════
+         CGU
+    ════════════════════════════ -->
+    <div id="cgu" class="tab-content">
+
+      <div class="section">
+        <h2>Préambule</h2>
+        <p>Les présentes Conditions Générales d'Utilisation régissent l'accès et l'utilisation de Projet Horizon, accessible à l'adresse <strong>https://projet-horizon-sem.vercel.app</strong>.</p>
+        <p>En accédant au site, l'utilisateur accepte sans réserve les présentes CGU.</p>
+      </div>
+
+      <div class="section">
+        <h2>1. Objet</h2>
+        <p>Projet Horizon est un serious game de formation à la prévention de la corruption, développé par <span class="placeholder">[Nom SEM]</span> à destination de ses collaborateurs et partenaires. Les situations présentées sont <strong>entièrement fictives</strong> et à visée exclusivement pédagogique.</p>
+      </div>
+
+      <div class="section">
+        <h2>2. Accès au service</h2>
+        <h3>Conditions d'accès</h3>
+        <p>L'accès est réservé aux collaborateurs de <span class="placeholder">[Nom SEM]</span> et aux partenaires autorisés.</p>
+        <h3>Compatibilité</h3>
+        <p>Le site est compatible avec Chrome, Firefox, Edge et Safari. Internet Explorer n'est pas supporté.</p>
+      </div>
+
+      <div class="section">
+        <h2>3. Usages autorisés et interdits</h2>
+        <h3>✅ Autorisé</h3>
+        <ul>
+          <li>Utiliser le site dans un cadre formatif</li>
+          <li>Partager des retours d'expérience sur le contenu pédagogique</li>
+          <li>Utiliser l'attestation de participation à des fins professionnelles internes</li>
+        </ul>
+        <h3>❌ Interdit</h3>
+        <ul>
+          <li>Reproduire, modifier ou distribuer le contenu du jeu</li>
+          <li>Tenter d'accéder aux données d'autres utilisateurs</li>
+          <li>Utiliser des outils automatisés (bots, scrapers)</li>
+          <li>Contourner les mécanismes de progression du jeu</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>4. Contenu fictif</h2>
+        <div class="warn-box">
+          <p>⚠️ Les personnages, situations et organisations décrits dans Projet Horizon sont entièrement fictifs. Toute ressemblance avec des faits réels, des personnes ou des organisations existantes serait purement fortuite et non intentionnelle.</p>
+        </div>
+        <p>Les informations juridiques présentées ont une vocation pédagogique générale. Elles ne constituent pas un conseil juridique personnalisé.</p>
+      </div>
+
+      <div class="section">
+        <h2>5. Propriété intellectuelle</h2>
+        <p>Tous les éléments du site appartiennent à <span class="placeholder">[Nom SEM]</span>.</p>
+        <p>Conception et réalisation : <strong>Cécile Larade © 2026</strong>. Tous droits réservés.</p>
+      </div>
+
+      <div class="section">
+        <h2>6. Droit applicable</h2>
+        <p>Les présentes CGU sont soumises au droit français. En cas de litige, après tentative de résolution amiable, les tribunaux du ressort du siège social de <span class="placeholder">[Nom SEM]</span> seront compétents.</p>
+      </div>
+
+      <div class="section">
+        <h2>7. Contact</h2>
+        <p>Pour toute question : <span class="placeholder">[Email juridique]</span></p>
+      </div>
+
+    </div>
+
+    <!-- Bouton retour -->
+    <a href="index.html" class="btn-retour">← Retour au jeu</a>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="page-footer">
+    <p>Projet Horizon — Serious Game Anticorruption</p>
+    <p>© 2026 <span class="placeholder">[Nom SEM]</span> — Conception : Cécile Larade</p>
+    <p style="margin-top:8px">
+      <a href="#ml" onclick="showTab('ml')">Mentions légales</a> &nbsp;·&nbsp;
+      <a href="#rgpd" onclick="showTab('rgpd')">Confidentialité</a> &nbsp;·&nbsp;
+      <a href="#cgu" onclick="showTab('cgu')">CGU</a>
+    </p>
+  </div>
+
+  <script>
+    function showTab(id) {
+      document.querySelectorAll('.tab-content')
+        .forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-tab')
+        .forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      const tabs = ['ml', 'rgpd', 'cgu'];
+      const idx = tabs.indexOf(id);
+      if (idx >= 0) document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab && ['ml', 'rgpd', 'cgu'].includes(tab)) showTab(tab);
+    });
+  </script>
+
+</body>
+</html>

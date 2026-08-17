@@ -1,0 +1,16 @@
+{
+  "scripts": {
+    "test:data": "node tests/validate-data.js",
+    "test:e2e": "npx playwright test",
+    "test": "node tests/validate-data.js && npx playwright test",
+    "test:report": "npx playwright show-report tests/report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "playwright": "^1.61.1",
+    "pngjs": "^7.0.0",
+    "serve": "^14.2.6",
+    "sharp": "^0.34.5",
+    "to-ico": "^1.1.5"
+  }
+}

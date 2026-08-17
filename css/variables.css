@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Nunito+Sans:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+/* ═══════════════════════════════════════════════════════════════
+   VARIABLES CSS — Projet Horizon
+   Toutes les valeurs de design du projet centralisées ici.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+
+  /* ── Palette principale ──────────────────────────────────── */
+  --navy:   #1b2a4a;
+  --navy2:  #243560;
+  --navy3:  #2e4278;
+  --sky:    #e8f2ff;
+  --sky2:   #d0e4ff;
+  --teal:   #0e7c7b;
+  --teal2:  #12a09f;
+  --gold:   #f59e0b;
+  --gold2:  #fbbf24;
+  --coral:  #e85d4a;
+  --coral2: #f87171;
+  --lime:   #22c55e;
+  --lime2:  #4ade80;
+  --ink:    #1e1e2e;
+  --ink2:   #2d2d42;
+  --paper:  #fafaf8;
+  --paper2: #f0ede6;
+  --paper3: #e4e0d8;
+  --muted:  #6b7280;
+
+  /* ── Couleurs des jauges ─────────────────────────────────── */
+  --jauge-integrite:   #22c55e;   /* vert  — Intégrité */
+  --jauge-projet:      #60a0f8;   /* bleu  — Performance Projet */
+  --jauge-image:       #d888f8;   /* mauve — Image SEM */
+
+  /* ── États des jauges / choix ────────────────────────────── */
+  --etat-bon:      #6cf06c;  /* vert clair  — bon choix */
+  --etat-risque:   #f0c06c;  /* orange      — choix risqué */
+  --etat-mauvais:  #f06c6c;  /* rouge clair — mauvais choix */
+
+  /* ── Couleur d'accentuation texte ────────────────────────── */
+  --texte-accent: #fcd584;   /* or pâle — titres mis en valeur */
+
+  /* ── Ombres & bordures ───────────────────────────────────── */
+  --border:     rgba(0, 0, 0, .08);
+  --shadow:     0 4px 20px rgba(0, 0, 0, .12);
+  --shadow-lg:  0 12px 40px rgba(0, 0, 0, .18);
+  --shadow-or:  0 0 0 4px rgba(245, 158, 11, .08);  /* halo doré (badges, tutoriel) */
+
+  /* ── Typographie ─────────────────────────────────────────── */
+  --font-texte:  'Nunito Sans', sans-serif;   /* corps de texte */
+  --font-titre:  'Nunito', sans-serif;        /* titres, dialogues */
+  --font-mono:   'Space Mono', monospace;     /* éléments techniques */
+
+  /* ── Espacements ─────────────────────────────────────────── */
+  --espace-xs:  4px;
+  --espace-sm:  8px;
+  --espace-md:  12px;
+  --espace-lg:  16px;
+  --espace-xl:  24px;
+  --espace-2xl: 32px;
+
+  /* ── Rayons de bordure ───────────────────────────────────── */
+  --rayon-sm:   8px;
+  --rayon-md:   12px;
+  --rayon-lg:   16px;
+  --rayon-xl:   24px;
+  --rayon-rond: 999px;  /* pilule / cercle */
+
+  /* ── Épaisseur de bordure ────────────────────────────────── */
+  --bordure:      1.5px;
+  --bordure-fine: 1px;
+
+  /* ── Dimensions globales ─────────────────────────────────── */
+  --hauteur-barre: 5.5vh;   /* hauteur du HUD en haut et de la barre de navigation */
+
+  /* ── Safe area iOS/Android ───────────────────────────────── */
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
+
+  /* ── Breakpoints responsive ──────────────────────────────── */
+  --bp-mobile: 640px;
+
+  /* ── Durées d'animation ──────────────────────────────────── */
+  --anim-rapide:  0.18s;
+  --anim-normale: 0.35s;
+  --anim-lente:   0.55s;
+
+  /* ── Couches z-index ─────────────────────────────────────── */
+  --z-scene:         0;
+  --z-confetti:      1;
+  --z-vignette:      2;
+  --z-particules:    3;
+  --z-hotspots:      5;
+  --z-tuto-overlay:  6;
+  --z-personnages:   10;
+  --z-dialogue:      100;   /* panneaux mutuellement exclusifs */
+  --z-investigation: 100;
+  --z-choix:         100;
+  --z-micro:         100;
+  --z-verdict:       120;
+  --z-contexte:      130;
+  --z-titre-chap:    140;
+  --z-hud:           150;
+  --z-popup-indice:  160;
+  --z-panel-badges:  160;
+  --z-callout-tuto:  160;
+  --z-recap:         180;
+  --z-fondu:         190;
+  --z-sos:           200;
+  --z-intermediaire: 200;
+  --z-lexique:       230;
+  --z-modales:       240;   /* intro, service, parcours */
+  --z-fin:           260;
+  --z-formateur:     500;   /* modal formateur — toujours au-dessus */
+  --z-toast:         300;
+
+}
+
+/* ── Réinitialisation globale ────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  height: -webkit-fill-available;
+  margin: 0;
+  padding: 0;
+  background: #080810;
+}
+
+body {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #080810;
+  font-family: var(--font-texte);
+}

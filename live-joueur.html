@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Projet Horizon — Rejoindre la session</title>
+<link rel="stylesheet" href="css/live.css">
+<script src="config.js"></script>
+<script src="js/data/chapters.js"></script>
+<script src="js/data/reflexe-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/live-session.js"></script>
+</head>
+<body id="live-joueur">
+
+<!-- ══ ENTRÉE ═══════════════════════════════════════════════════ -->
+<div id="lj-entree" class="lv-screen on">
+  <div class="lj-entree-wrap">
+    <div class="lj-entree-top">
+      <div class="lj-entree-logo">🏛️</div>
+      <div class="lj-entree-brand">Projet Horizon</div>
+      <h1 class="lj-entree-title">Rejoindre la session</h1>
+      <p class="lj-entree-sub">Formation Anticorruption · Loi Sapin II</p>
+      <div id="lj-code-session-display" class="lj-code-pill" style="display:none"></div>
+    </div>
+
+    <div class="lj-entree-form lv-panel">
+      <div class="lj-form-field">
+        <label class="lj-form-label" for="lj-input-nom">Votre prénom</label>
+        <input type="text" id="lj-input-nom" class="lv-input lj-input-lg"
+               placeholder="ex : Alice" autocomplete="given-name" maxlength="30"
+               onkeydown="if(event.key==='Enter')_lj$('lj-input-code').focus()">
+      </div>
+      <div class="lj-form-field">
+        <label class="lj-form-label" for="lj-input-code">Code session</label>
+        <input type="text" id="lj-input-code" class="lv-input lj-input-lg lv-input-mono"
+               placeholder="HRZ-482" autocomplete="off" maxlength="10"
+               onkeydown="if(event.key==='Enter')ljRejoindre()">
+      </div>
+      <div id="lj-error" class="lj-error"></div>
+      <button id="lj-btn-rejoindre" class="lv-btn lv-btn-gold lj-btn-full" onclick="ljRejoindre()">
+        Rejoindre la session
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ATTENTE ══════════════════════════════════════════════════ -->
+<div id="lj-attente" class="lv-screen">
+  <div class="lj-attente-inner">
+
+    <!-- Repère spectateur (toujours visible) -->
+    <div class="lj-attente-eyebrow">
+      <span class="lj-attente-cam">🎬</span>
+      <span class="lj-attente-eyebrow-txt">L'histoire se joue — regardez le grand écran</span>
+    </div>
+
+    <!-- Carte principale -->
+    <div class="lj-attente-card">
+      <div class="lj-wait-logo">🏛️</div>
+      <div class="lj-wait-nom" id="lj-nom-display"></div>
+      <div class="lj-wait-badge" id="lj-nb-connectes"></div>
+      <div class="lj-wait-affaire" id="lj-attente-affaire"></div>
+      <div class="lj-wait-dots">
+        <span class="lj-dot"></span>
+        <span class="lj-dot"></span>
+        <span class="lj-dot"></span>
+      </div>
+      <p class="lj-wait-hint">En attente du formateur…</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ DIALOGUE (lecture collective) ════════════════════════════ -->
+<div id="lj-dialogue" class="lv-screen">
+  <header class="lj-dlg-bar">
+    <span class="lj-dlg-affaire-tag" id="lj-dlg-affaire">—</span>
+    <span class="lj-dlg-prog" id="lj-dlg-progress"></span>
+  </header>
+
+  <div class="lj-dlg-eyebrow">🎬&nbsp;L'histoire se joue — regardez le grand écran</div>
+
+  <div class="lj-dlg-scroll">
+    <div class="lj-dlg-card">
+      <div class="lj-dlg-speaker-row">
+        <img class="lj-dlg-portrait" id="lj-dlg-portrait"
+             src="" alt="" onerror="this.style.display='none'">
+        <span class="lj-dlg-speaker-name" id="lj-dlg-speaker"></span>
+      </div>
+      <div class="lj-dlg-bubble" id="lj-dlg-texte"></div>
+    </div>
+  </div>
+
+  <footer class="lj-dlg-foot">
+    <button id="lj-btn-lu" class="lv-btn lv-btn-gold lj-btn-full" onclick="ljMarquerLu()">
+      ✓&nbsp;J'ai lu
+    </button>
+    <div class="lj-lu-compteur" id="lj-lu-compteur"></div>
+    <p class="lj-dlg-hint-txt">Le formateur avance au prochain message</p>
+  </footer>
+</div>
+
+<!-- ══ RÉFLEXE PROFESSIONNEL ═════════════════════════════════════ -->
+<div id="lj-reflexe" class="lv-screen">
+  <header class="lj-reflexe-hdr">
+    <span class="lj-tag-phase">Phase 1 · Réflexe Pro</span>
+    <h2 class="lj-reflexe-h2">Que feriez-vous ?</h2>
+    <p class="lj-reflexe-rule">Choisissez <strong>2 questions</strong> et <strong>2 actions</strong></p>
+  </header>
+
+  <div class="lj-reflexe-body" id="lj-reflexe-body">
+    <section class="lj-reflexe-sec">
+      <div class="lj-sec-label">Questions à poser</div>
+      <div class="lj-reflexe-opts" id="lj-reflexe-questions"></div>
+    </section>
+    <section class="lj-reflexe-sec">
+      <div class="lj-sec-label">Actions à mener</div>
+      <div class="lj-reflexe-opts" id="lj-reflexe-actions"></div>
+    </section>
+  </div>
+
+  <footer class="lj-reflexe-foot">
+    <div class="lj-reflexe-counter" id="lj-reflexe-counter">0 / 2 questions · 0 / 2 actions</div>
+    <button class="lv-btn lv-btn-gold lj-btn-full" id="lj-reflexe-btn"
+            onclick="ljValiderReflexe()" disabled>
+      Valider mon réflexe
+    </button>
+  </footer>
+</div>
+
+<!-- ══ CONFIRMATION RÉFLEXE ═════════════════════════════════════ -->
+<div id="lj-reflexe-confirme" class="lv-screen lj-center-v">
+  <div class="lj-rconf-card" id="lj-rconf-card">
+
+    <!-- Badge statut (icône + couleur selon résultat) -->
+    <div class="lj-rconf-badge" id="lj-rconf-badge">
+      <div class="lj-rconf-badge-icon" id="lj-rconf-badge-icon">✓</div>
+    </div>
+
+    <!-- Titre résultat -->
+    <div class="lj-rconf-title" id="lj-rconf-title">Réflexe enregistré !</div>
+
+    <!-- Résumé court (1 phrase) -->
+    <div class="lj-rconf-resume" id="lj-rconf-resume">En attente de la révélation par le formateur…</div>
+
+    <!-- Streak (affiché seulement si streak ≥ 3) -->
+    <div class="lj-rconf-streak" id="lj-rconf-streak" style="display:none">
+      <span class="lj-rconf-streak-icon" id="lj-rconf-streak-icon">🔥</span>
+      <span class="lj-rconf-streak-txt" id="lj-rconf-streak-txt">Série en cours</span>
+    </div>
+
+    <!-- Dots attente -->
+    <div class="lj-wait-dots lj-wait-dots--sm">
+      <span class="lj-dot"></span><span class="lj-dot"></span><span class="lj-dot"></span>
+    </div>
+    <p class="lj-rconf-waiting">Le formateur analyse les résultats…</p>
+
+  </div>
+</div>
+
+<!-- ══ VOTE ═════════════════════════════════════════════════════ -->
+<div id="lj-vote" class="lv-screen">
+  <header class="lj-vote-hdr">
+    <div class="lj-vote-num" id="lj-vote-affaire">Affaire —</div>
+    <h2 class="lj-vote-h2" id="lj-vote-titre">—</h2>
+    <p class="lj-vote-ctx" id="lj-vote-contexte"></p>
+  </header>
+
+  <div class="lj-vote-timer-wrap">
+    <div class="lj-timer-track">
+      <div class="lj-timer-fill" id="lj-timer-fill"></div>
+    </div>
+    <span class="lj-timer-secs" id="lj-timer-secs">30</span>
+  </div>
+
+  <div class="lj-vote-choix">
+    <button class="lj-choix-btn a" id="lj-btn-a" onclick="ljVoter(0)">
+      <span class="lj-choix-lettre">A</span>
+      <span class="lj-choix-desc" id="lj-desc-a"></span>
+    </button>
+    <button class="lj-choix-btn b" id="lj-btn-b" onclick="ljVoter(1)">
+      <span class="lj-choix-lettre">B</span>
+      <span class="lj-choix-desc" id="lj-desc-b"></span>
+    </button>
+    <button class="lj-choix-btn c" id="lj-btn-c" onclick="ljVoter(2)">
+      <span class="lj-choix-lettre">C</span>
+      <span class="lj-choix-desc" id="lj-desc-c"></span>
+    </button>
+  </div>
+</div>
+
+<!-- ══ CONFIRMATION VOTE ════════════════════════════════════════ -->
+<div id="lj-confirme" class="lv-screen lj-center-v">
+  <div class="lj-confirm-card lv-panel">
+    <div class="lj-confirm-icon lj-confirm-icon--wait">⏳</div>
+    <div class="lj-confirm-title">Vote enregistré !</div>
+    <div class="lj-confirm-choix" id="lj-confirme-choix"></div>
+    <div class="lj-confirm-sub">En attente des autres participants…</div>
+  </div>
+</div>
+
+<!-- ══ RÉSULTATS PERSO ══════════════════════════════════════════ -->
+<div id="lj-resultats" class="lv-screen lj-center-v">
+  <div id="lj-confetti-wrap" class="lj-confetti-wrap"></div>
+  <div class="lj-result-card">
+    <div class="lj-resultat-icon"  id="lj-resultat-icon"></div>
+    <div class="lj-resultat-label" id="lj-resultat-label"></div>
+    <div class="lj-pts"            id="lj-pts"       style="display:none"></div>
+    <div class="lj-pts-label"      id="lj-pts-label" style="display:none"></div>
+    <div class="lj-bonne-reponse"  id="lj-bonne-reponse" style="display:none"></div>
+    <div class="lj-resultat-sub"   id="lj-resultat-sub"></div>
+    <div class="lj-score-total"    id="lj-score-total"></div>
+  </div>
+</div>
+
+<!-- ══ PODIUM INTERMÉDIAIRE ══════════════════════════════════════ -->
+<div id="lj-podium" class="lv-screen lj-center-v">
+  <div class="lj-pod-card lv-panel">
+    <div class="lj-pod-eyebrow">Classement en cours</div>
+    <div class="lj-pod-position" id="lj-pod-position"></div>
+    <div class="lj-pod-score"    id="lj-pod-score"></div>
+    <div class="lj-pod-gain"     id="lj-pod-gain"></div>
+    <p class="lj-pod-waiting">Le formateur prépare la suite…</p>
+  </div>
+</div>
+
+<!-- ══ QUIZ ═════════════════════════════════════════════════════ -->
+<div id="lj-quiz" class="lv-screen">
+  <header class="lj-quiz-hdr">
+    <div class="lj-quiz-meta">
+      <span class="lj-tag-phase" id="lj-quiz-num">Question 1</span>
+      <span class="lj-timer-secs" id="lj-quiz-timer-secs">30</span>
+    </div>
+    <div class="lj-quiz-timer-bar">
+      <div class="lj-timer-fill" id="lj-quiz-timer-fill"></div>
+    </div>
+  </header>
+  <div class="lj-quiz-q" id="lj-quiz-q"></div>
+  <div class="lj-vote-choix lj-quiz-opts" id="lj-quiz-opts">
+    <button class="lj-choix-btn a" id="lj-quiz-btn-a" onclick="ljQuizVoter(0)">
+      <span class="lj-choix-lettre">A</span>
+      <span class="lj-choix-desc" id="lj-quiz-desc-a"></span>
+    </button>
+    <button class="lj-choix-btn b" id="lj-quiz-btn-b" onclick="ljQuizVoter(1)">
+      <span class="lj-choix-lettre">B</span>
+      <span class="lj-choix-desc" id="lj-quiz-desc-b"></span>
+    </button>
+    <button class="lj-choix-btn c" id="lj-quiz-btn-c" onclick="ljQuizVoter(2)">
+      <span class="lj-choix-lettre">C</span>
+      <span class="lj-choix-desc" id="lj-quiz-desc-c"></span>
+    </button>
+  </div>
+</div>
+
+<!-- ══ RÉSULTAT QUIZ ════════════════════════════════════════════ -->
+<div id="lj-quiz-result" class="lv-screen lj-center-v">
+  <div class="lj-result-card">
+    <div class="lj-resultat-icon"  id="lj-quiz-result-icon"></div>
+    <div class="lj-resultat-label" id="lj-quiz-result-label"></div>
+    <div class="lj-quiz-expl"      id="lj-quiz-expl"></div>
+    <p class="lj-confirm-sub">En attente de la prochaine question…</p>
+  </div>
+</div>
+
+<!-- ══ FIN ══════════════════════════════════════════════════════ -->
+<div id="lj-fin" class="lv-screen">
+  <div class="lj-fin-inner">
+    <div class="lj-fin-top">
+      <div class="lj-fin-medal"   id="lj-fin-medal">🏅</div>
+      <h2 class="lj-fin-title"   id="lj-fin-title">Session terminée</h2>
+      <p class="lj-fin-message"  id="lj-fin-message"></p>
+    </div>
+    <div class="lj-fin-stats lv-panel" id="lj-fin-stats"></div>
+    <div class="lj-fin-position" id="lj-fin-position"></div>
+    <button class="lv-btn lv-btn-gold lj-btn-full" id="lj-btn-attestation"
+            onclick="ljTelechargerAttestation()" style="display:none">
+      Télécharger mon attestation
+    </button>
+  </div>
+</div>
+
+<script src="js/live-joueur.js"></script>
+</body>
+</html>

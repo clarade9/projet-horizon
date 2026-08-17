@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mode Live — Formateur | Projet Horizon</title>
+<link rel="stylesheet" href="css/live.css">
+<script src="config.js"></script>
+<script src="js/data/prologue.js"></script>
+<script src="js/data/chapters.js"></script>
+<script src="js/quiz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="js/data/reflexe-data.js"></script>
+<script src="js/live-session.js"></script>
+</head>
+<body id="live-formateur">
+
+<!-- ══ LOGIN ═══════════════════════════════════════════════════ -->
+<div id="lf-login">
+  <div class="lf-login-card lv-panel">
+    <div class="lf-login-logo">Projet Horizon</div>
+    <div class="lf-login-icon">📡</div>
+    <div class="lf-login-title">Mode Live</div>
+    <div class="lf-login-sub">Espace formateur — Session temps réel<br>Saisissez votre code d'accès</div>
+    <div class="lf-login-form">
+      <input type="password" id="lf-login-input" class="lv-input lv-input-mono"
+             placeholder="CODE FORMATEUR" autocomplete="off"
+             oninput="document.getElementById('lf-login-err').textContent=''"
+             onkeydown="if(event.key==='Enter')lfCheckLogin()">
+      <div id="lf-login-err" class="lf-login-error"></div>
+      <button class="lv-btn lv-btn-gold lv-btn-lg" style="width:100%" onclick="lfCheckLogin()">Accéder →</button>
+    </div>
+    <a href="dashboard.html" class="lf-login-back">← Retour au tableau de bord</a>
+  </div>
+</div>
+
+<!-- ══ LANDING ══════════════════════════════════════════════════ -->
+<div id="lf-landing" class="lv-screen">
+
+  <!-- Navbar -->
+  <div style="display:flex;align-items:center;gap:12px;padding:14px 28px;border-bottom:1px solid rgba(212,175,55,.12);background:rgba(7,9,15,.5);backdrop-filter:blur(8px);flex-shrink:0;">
+    <span style="font-family:var(--lv-mono);font-size:12px;letter-spacing:.2em;color:var(--lv-gold)">PROJET HORIZON</span>
+    <span class="lv-tag">Mode Live</span>
+    <span style="margin-left:auto;font-size:12px;color:var(--lv-text3)">Espace formateur</span>
+  </div>
+
+  <div class="lf-landing-inner">
+
+    <!-- Colonne gauche : code + QR -->
+    <div class="lf-landing-left">
+      <div class="lf-landing-eyebrow">Code de session</div>
+      <div class="lv-code-big" id="lf-code-display">···-···</div>
+      <div id="lf-qrcode" class="lv-qr-wrap"></div>
+      <div class="lv-url-pill" id="lf-url-display">Génération du code…</div>
+      <button class="lv-btn lv-btn-ghost lv-btn-sm" onclick="lfNouvelleSession()">↻ Nouvelle session</button>
+    </div>
+
+    <!-- Colonne droite : participants + démarrage -->
+    <div class="lf-landing-right">
+
+      <div>
+        <div class="lf-section-label" style="margin-bottom:12px;">Participants connectés</div>
+        <div class="lf-nb-connectes">
+          <div class="lf-nb-number" id="lf-nb-connectes">0</div>
+          <div class="lf-nb-label">
+            <span class="lv-pulse-dot"></span>En attente<br>
+            <span style="font-size:12px;color:var(--lv-text3)">Actif dès 1 participant</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chips participants -->
+      <div>
+        <div class="lf-section-label" style="margin-bottom:10px;">Liste des participants</div>
+        <div class="lf-participants-mini" id="lf-participants-chips">
+          <span style="font-size:13px;color:var(--lv-text3)">Aucun participant pour l'instant…</span>
+        </div>
+      </div>
+
+      <!-- Démarrage -->
+      <div class="lf-start-zone">
+        <div class="lf-section-label">Parcours — Affaires à jouer</div>
+
+        <!-- Preset parcours -->
+        <div class="lf-preset-list">
+          <button class="lf-preset-btn" onclick="lfAppliquerPreset('complet')" title="Toutes les affaires">
+            <span class="lf-preset-icon">🏛️</span>
+            <span class="lf-preset-name">Complet</span>
+            <span class="lf-preset-sub">13 affaires</span>
+          </button>
+          <button class="lf-preset-btn" onclick="lfAppliquerPreset('achats')" title="Affaires Achats & Marchés">
+            <span class="lf-preset-icon">🛒</span>
+            <span class="lf-preset-name">Achats</span>
+            <span class="lf-preset-sub">4 affaires</span>
+          </button>
+          <button class="lf-preset-btn" onclick="lfAppliquerPreset('finance')" title="Affaires Finance & Gestion">
+            <span class="lf-preset-icon">💰</span>
+            <span class="lf-preset-name">Finance</span>
+            <span class="lf-preset-sub">3 affaires</span>
+          </button>
+          <button class="lf-preset-btn" onclick="lfAppliquerPreset('rh')" title="Affaires RH & Management">
+            <span class="lf-preset-icon">👥</span>
+            <span class="lf-preset-name">RH</span>
+            <span class="lf-preset-sub">3 affaires</span>
+          </button>
+          <button class="lf-preset-btn" onclick="lfAppliquerPreset('maintenance')" title="Affaires Site Industriel">
+            <span class="lf-preset-icon">🔧</span>
+            <span class="lf-preset-name">Industriel</span>
+            <span class="lf-preset-sub">2 affaires</span>
+          </button>
+          <button class="lf-preset-btn lf-preset-custom" onclick="lfAppliquerPreset('custom')" title="Sélection manuelle">
+            <span class="lf-preset-icon">✏️</span>
+            <span class="lf-preset-name">Personnalisé</span>
+            <span class="lf-preset-sub">Choisir</span>
+          </button>
+        </div>
+
+        <div class="lf-parcours-list" id="lf-parcours-list">
+          <!-- Checkboxes générées par JS -->
+        </div>
+        <div class="lf-parcours-actions">
+          <button class="lv-btn lv-btn-ghost lv-btn-sm" onclick="lfSelectAll()">Tout sélectionner</button>
+          <button class="lv-btn lv-btn-ghost lv-btn-sm" onclick="lfSelectNone()">Tout décocher</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Bouton Commencer ancré en bas à droite -->
+  <div class="lf-landing-start-bar">
+    <button id="lf-btn-commencer" class="lv-btn lv-btn-gold lv-btn-lg" onclick="lfCommencer()" disabled>
+      Commencer la session →
+    </button>
+  </div>
+</div>
+
+<!-- ══ PROLOGUE ══════════════════════════════════════════════════ -->
+<div id="lf-prologue" class="lv-screen">
+
+  <!-- Fond image SEM nuit -->
+  <div class="lf-pro-bg">
+    <img src="assets/scenes/prologue.webp" alt="" class="lf-pro-bg-img">
+    <div class="lf-pro-bg-overlay"></div>
+  </div>
+
+  <!-- Indicateur de slide -->
+  <div class="lf-pro-indicator" id="lf-pro-indicator">1 / 5</div>
+
+  <!-- Bouton Passer -->
+  <button class="lf-pro-skip" onclick="lfProloguePasser()">Passer le prologue →</button>
+
+  <!-- Slides -->
+  <div class="lf-pro-slides" id="lf-pro-slides">
+
+    <!-- SLIDE 1 — Logo + titre -->
+    <div class="lf-pro-slide" id="lf-pro-slide-0">
+      <div class="lf-pro-slide-inner lf-pro-center">
+        <div class="lf-pro-logo">PROJET HORIZON</div>
+        <div class="lf-pro-title">Formation Anticorruption</div>
+        <div class="lf-pro-welcome">Session de formation — Bienvenue</div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2 — Le contexte -->
+    <div class="lf-pro-slide" id="lf-pro-slide-1">
+      <div class="lf-pro-slide-inner">
+        <div class="lf-pro-slide-heading">Le contexte</div>
+        <p class="lf-pro-body">Vous travaillez pour une SEM —<br>une Société d'Économie Mixte.</p>
+        <p class="lf-pro-body">Vous prenez des décisions<br>qui engagent votre responsabilité.</p>
+        <p class="lf-pro-body">Aujourd'hui, vous allez faire face<br>à des <strong>situations ambiguës</strong><br>tirées de la réalité du terrain.</p>
+      </div>
+    </div>
+
+    <!-- SLIDE 3 — L'enjeu -->
+    <div class="lf-pro-slide" id="lf-pro-slide-2">
+      <div class="lf-pro-slide-inner">
+        <div class="lf-pro-slide-heading">L'enjeu</div>
+        <p class="lf-pro-body">La corruption ne ressemble pas<br>toujours à ce qu'on imagine.</p>
+        <p class="lf-pro-body lf-pro-body-em">Elle commence souvent par<br>un service rendu,<br>un déjeuner accepté,<br>une procédure contournée<br><em>« juste cette fois ».</em></p>
+      </div>
+    </div>
+
+    <!-- SLIDE 4 — Comment ça marche -->
+    <div class="lf-pro-slide" id="lf-pro-slide-3">
+      <div class="lf-pro-slide-inner">
+        <div class="lf-pro-slide-heading">Comment ça marche</div>
+        <div class="lf-pro-steps">
+          <div class="lf-pro-step"><span class="lf-pro-step-num">1</span><span>Vous observez la scène</span></div>
+          <div class="lf-pro-step"><span class="lf-pro-step-num">2</span><span>Vous votez depuis votre téléphone</span></div>
+          <div class="lf-pro-step"><span class="lf-pro-step-num">3</span><span>On analyse ensemble les résultats</span></div>
+        </div>
+        <p class="lf-pro-body" style="margin-top:32px;color:rgba(255,255,255,.6)">Pas de jugement.<br>Que des apprentissages.</p>
+      </div>
+    </div>
+
+    <!-- SLIDE 5 — C'est parti -->
+    <div class="lf-pro-slide" id="lf-pro-slide-4">
+      <div class="lf-pro-slide-inner lf-pro-center">
+        <div class="lf-pro-slide-heading">C'est parti !</div>
+        <p class="lf-pro-body">Tous les participants sont connectés.<br>La formation commence.</p>
+        <button class="lv-btn lv-btn-gold lv-btn-lg lf-pro-launch-btn" onclick="lfPrologueTerminer()">
+          Lancer l'introduction →
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /.lf-pro-slides -->
+
+  <!-- Navigation formateur -->
+  <div class="lf-pro-nav">
+    <button class="lv-btn lv-btn-gold" id="lf-pro-btn-next" onclick="lfPrologueSuivant()">Suivant →</button>
+  </div>
+
+</div><!-- /#lf-prologue -->
+
+<!-- ══ GAME ═════════════════════════════════════════════════════ -->
+<div id="lf-game" class="lv-screen">
+
+  <!-- Header game -->
+  <div class="lf-game-header">
+    <span class="lf-game-title">Projet Horizon Live</span>
+    <span class="lf-game-affaire-label" id="lf-game-affaire-label">—</span>
+    <span class="lv-tag" id="lf-phase-tag">Dialogue</span>
+    <span style="font-family:var(--lv-mono);font-size:11px;color:var(--lv-text3);margin-left:8px;" id="lf-session-code-label"></span>
+    <div class="lf-header-tools">
+      <button class="lf-tool-btn" id="lf-btn-son"    onclick="lfToggleSon()"       title="Couper / activer le son">🔊 Son</button>
+      <button class="lf-tool-btn" id="lf-btn-fs"     onclick="lfToggleFullscreen()" title="Plein écran">⛶ Plein écran</button>
+    </div>
+  </div>
+
+  <!-- Zone principale : dialogue + scène -->
+  <div class="lf-main" id="lf-main">
+
+    <!-- Scène (fond) -->
+    <div class="lf-scene" id="lf-scene">
+      <img id="lf-scene-img" src="" alt="" class="lf-scene-img">
+      <div class="lf-scene-vignette"></div>
+    </div>
+
+    <!-- Personnage -->
+    <div class="lf-personnage" id="lf-personnage"></div>
+
+    <!-- Zone dialogue / vote -->
+    <div class="lf-dlg-overlay">
+
+      <!-- Speaker + contenu -->
+      <div class="lf-dlg-container">
+        <div class="lf-dlg-speaker-bar">
+          <div class="lf-dlg-speaker-dot"></div>
+          <span class="lf-dlg-speaker" id="lf-dlg-speaker">—</span>
+          <span class="lf-dlg-progress" id="lf-dlg-progress">▼ suivant</span>
+        </div>
+        <div class="lf-dlg-zone" id="lf-dlg-zone"></div>
+      </div>
+
+      <!-- Panneau votes (masqué pendant dialogue, visible pendant vote) -->
+      <div class="lf-side-panel" id="lf-right">
+
+        <div>
+          <div class="lf-section-label">Votes en direct</div>
+          <div style="font-family:var(--lv-mono);font-size:11px;color:var(--lv-text3);margin-top:2px;" id="lf-vote-count-label"></div>
+        </div>
+
+        <!-- Compteur de votes (pendant le vote, sans les labels) -->
+        <div class="lf-vote-live-count" id="lf-vote-live-count">
+          <div class="lf-vote-big-number" id="lf-vote-big-number">0</div>
+          <div class="lf-vote-big-label">vote(s) reçu(s)</div>
+          <div class="lf-vote-participants-bar" id="lf-vote-participants-bar"></div>
+        </div>
+
+        <!-- Barres A/B/C (masquées pendant le vote, visibles après fermeture) -->
+        <div class="lf-vote-bar-wrap" id="lf-vote-bars" style="display:none">
+          <div class="lf-vote-bar-row">
+            <div class="lf-vote-bar-lettre a">A</div>
+            <div class="lf-vote-bar-track"><div class="lf-vote-bar-fill a" id="lf-bar-a" style="width:0%"></div></div>
+            <div class="lf-vote-bar-info" id="lf-info-a">0 / 0%</div>
+          </div>
+          <div class="lf-vote-bar-row">
+            <div class="lf-vote-bar-lettre b">B</div>
+            <div class="lf-vote-bar-track"><div class="lf-vote-bar-fill b" id="lf-bar-b" style="width:0%"></div></div>
+            <div class="lf-vote-bar-info" id="lf-info-b">0 / 0%</div>
+          </div>
+          <div class="lf-vote-bar-row">
+            <div class="lf-vote-bar-lettre c">C</div>
+            <div class="lf-vote-bar-track"><div class="lf-vote-bar-fill c" id="lf-bar-c" style="width:0%"></div></div>
+            <div class="lf-vote-bar-info" id="lf-info-c">0 / 0%</div>
+          </div>
+        </div>
+
+        <!-- Timer SVG -->
+        <div class="lf-timer-wrap" id="lf-timer-wrap" style="display:none">
+          <svg class="lf-timer-svg" width="72" height="72" viewBox="0 0 72 72">
+            <circle class="lf-timer-bg" cx="36" cy="36" r="30"/>
+            <circle class="lf-timer-arc" id="lf-timer-arc" cx="36" cy="36" r="30"
+              stroke-dasharray="188.5" stroke-dashoffset="0"/>
+            <text class="lf-timer-text" id="lf-timer-text" x="36" y="36">30</text>
+          </svg>
+          <div class="lf-timer-label">
+            Secondes restantes<br>
+            <small style="color:var(--lv-text3)">Timer lancé à l'ouverture des votes</small>
+          </div>
+        </div>
+
+        <!-- Participants -->
+        <div class="lf-participants-wrap">
+          <div class="lf-participants-header">Participants</div>
+          <div id="lf-participants-list"></div>
+        </div>
+      </div>
+
+    </div><!-- /.lf-dlg-overlay -->
+
+  </div><!-- /.lf-main -->
+
+  <!-- Barre de contrôles -->
+  <div id="lf-controls">
+    <div id="lf-lecture-indicateur" class="lf-lecture-indicateur" style="display:none"></div>
+    <button id="lf-btn-dlg-next"       class="lv-btn lv-btn-gold lv-btn-sm"    onclick="lfDlgNext()"            style="display:none">Suivant →</button>
+    <button id="lf-btn-fermer-reflexe" class="lv-btn lv-btn-primary lv-btn-sm" onclick="lfFermerReflexe()"      style="display:none">■ Clore le réflexe → Débriefing</button>
+    <button id="lf-btn-ouvrir"         class="lv-btn lv-btn-ghost lv-btn-sm"   onclick="lfOuvrirVotesNow()"     style="display:none">⏳ Ouverture dans <span id="lf-countdown-secs">10</span>s</button>
+    <button id="lf-btn-lancer-now"     class="lv-btn lv-btn-gold lv-btn-sm"    onclick="lfOuvrirVotesNow()"     style="display:none">▶ Lancer maintenant</button>
+    <button id="lf-btn-fermer"    class="lv-btn lv-btn-ghost lv-btn-sm"   onclick="lfFermerVotes()"        style="display:none">■ Clore les votes</button>
+    <button id="lf-btn-resultats" class="lv-btn lv-btn-primary lv-btn-sm" onclick="lfAfficherResultats()"  style="display:none">Voir les résultats →</button>
+    <button id="lf-btn-suivant"   class="lv-btn lv-btn-ghost lv-btn-sm"   onclick="lfAffaireSuivante()"    style="display:none">Affaire suivante →</button>
+    <button id="lf-btn-terminer"  class="lv-btn lv-btn-danger lv-btn-sm"  onclick="lfTerminerConfirm()"    style="display:none">Terminer la session</button>
+    <button class="lv-btn lv-btn-ghost lv-btn-sm" onclick="lfLancerAffaire()" style="margin-left:auto;">↺ Changer affaire</button>
+  </div>
+</div><!-- /#lf-game -->
+
+<!-- ══ CORRECTION AFFAIRE ════════════════════════════════════════ -->
+<div id="lf-correction" class="lv-screen">
+  <div class="lf-correction-inner">
+    <div class="lf-correction-header">
+      <div class="lf-correction-eyebrow" id="lf-corr-eyebrow">Étape 1 / 3 — Dépouillement</div>
+      <div class="lf-correction-title"><span id="lf-corr-affaire-name"></span></div>
+    </div>
+
+    <!-- STEP 1 : Dépouillement — barres résultats + bonne réponse révélée -->
+    <div class="lf-corr-step" id="lf-corr-step1">
+      <div class="lf-vote-bar-wrap" id="lf-corr-bars">
+        <div class="lf-vote-bar-row">
+          <div class="lf-vote-bar-lettre a" id="lf-corr-lettre-a">A</div>
+          <div class="lf-vote-bar-track"><div class="lf-vote-bar-fill a" id="lf-corr-bar-a" style="width:0%"></div></div>
+          <div class="lf-vote-bar-info" id="lf-corr-info-a">0 / 0%</div>
+        </div>
+        <div class="lf-vote-bar-row">
+          <div class="lf-vote-bar-lettre b" id="lf-corr-lettre-b">B</div>
+          <div class="lf-vote-bar-track"><div class="lf-vote-bar-fill b" id="lf-corr-bar-b" style="width:0%"></div></div>
+          <div class="lf-vote-bar-info" id="lf-corr-info-b">0 / 0%</div>
+        </div>
+        <div class="lf-vote-bar-row">
+          <div class="lf-vote-bar-lettre c" id="lf-corr-lettre-c">C</div>
+          <div class="lf-vote-bar-track"><div class="lf-vote-bar-fill c" id="lf-corr-bar-c" style="width:0%"></div></div>
+          <div class="lf-vote-bar-info" id="lf-corr-info-c">0 / 0%</div>
+        </div>
+      </div>
+      <!-- Bandeau bonne réponse -->
+      <div class="lf-corr-bonne-reponse" id="lf-corr-bonne-reponse"></div>
+    </div>
+
+    <!-- STEP 2 : Explication — recap + analyse juridique + gestes -->
+    <div class="lf-corr-step" id="lf-corr-step2" style="display:none">
+      <div class="lf-correction-recap" id="lf-correction-recap"></div>
+    </div>
+
+    <div class="lf-correction-actions">
+      <button class="lv-btn lv-btn-gold lv-btn-lg" id="lf-corr-btn-next" onclick="lfCorrectionNext()">
+        Explication →
+      </button>
+      <button class="lv-btn lv-btn-danger lv-btn-sm" onclick="lfTerminerConfirm()">
+        Terminer la session
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PODIUM INTERMÉDIAIRE ═════════════════════════════════════ -->
+<div id="lf-podium-inter" class="lv-screen">
+  <canvas id="lf-pod-canvas" class="lf-pod-canvas"></canvas>
+
+  <div class="lf-pod-inner">
+    <div class="lf-pod-title" id="lf-pod-title">🏆 Classement après l'affaire —</div>
+
+    <!-- Podium top 3 -->
+    <div class="lf-pod-podium" id="lf-pod-podium">
+      <div class="lf-pod-place lf-pod-p2" id="lf-pod-p2">
+        <div class="lf-pod-medal">🥈</div>
+        <div class="lf-pod-nom" id="lf-pod-nom-2">—</div>
+        <div class="lf-pod-score" id="lf-pod-score-2">0 pts</div>
+        <div class="lf-pod-base lf-pod-base-2">2</div>
+      </div>
+      <div class="lf-pod-place lf-pod-p1" id="lf-pod-p1">
+        <div class="lf-pod-medal">🥇</div>
+        <div class="lf-pod-nom" id="lf-pod-nom-1">—</div>
+        <div class="lf-pod-score" id="lf-pod-score-1">0 pts</div>
+        <div class="lf-pod-base lf-pod-base-1">1</div>
+      </div>
+      <div class="lf-pod-place lf-pod-p3" id="lf-pod-p3">
+        <div class="lf-pod-medal">🥉</div>
+        <div class="lf-pod-nom" id="lf-pod-nom-3">—</div>
+        <div class="lf-pod-score" id="lf-pod-score-3">0 pts</div>
+        <div class="lf-pod-base lf-pod-base-3">3</div>
+      </div>
+    </div>
+
+    <!-- Liste 4e et suivants -->
+    <div class="lf-pod-liste" id="lf-pod-liste"></div>
+
+    <!-- Stats affaire -->
+    <div class="lf-pod-stats" id="lf-pod-stats"></div>
+
+    <!-- Bouton affaire suivante (uniquement visible formateur) -->
+    <div class="lf-pod-actions">
+      <button class="lv-btn lv-btn-gold lv-btn-lg" onclick="lfPodiumSuivant()">
+        Affaire suivante →
+      </button>
+      <button class="lv-btn lv-btn-danger lv-btn-sm" onclick="lfTerminerConfirm()">
+        Terminer la session
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RÉSULTATS AFFAIRE ════════════════════════════════════════ -->
+<div id="lf-resultats" class="lv-screen">
+  <div class="lf-resultats-inner">
+    <div class="lf-resultats-title">Dépouillement — <span id="lf-res-affaire-name"></span></div>
+    <div class="lf-resultats-subtitle">Résultats des votes</div>
+
+    <!-- Barres figées -->
+    <div class="lf-vote-bar-wrap" id="lf-res-bars">
+      <div class="lf-vote-bar-row">
+        <div class="lf-vote-bar-lettre a" id="lf-res-lettre-a">A</div>
+        <div class="lf-vote-bar-track"><div class="lf-vote-bar-fill a" id="lf-res-bar-a" style="width:0%"></div></div>
+        <div class="lf-vote-bar-info" id="lf-res-info-a">0 / 0%</div>
+      </div>
+      <div class="lf-vote-bar-row">
+        <div class="lf-vote-bar-lettre b" id="lf-res-lettre-b">B</div>
+        <div class="lf-vote-bar-track"><div class="lf-vote-bar-fill b" id="lf-res-bar-b" style="width:0%"></div></div>
+        <div class="lf-vote-bar-info" id="lf-res-info-b">0 / 0%</div>
+      </div>
+      <div class="lf-vote-bar-row">
+        <div class="lf-vote-bar-lettre c" id="lf-res-lettre-c">C</div>
+        <div class="lf-vote-bar-track"><div class="lf-vote-bar-fill c" id="lf-res-bar-c" style="width:0%"></div></div>
+        <div class="lf-vote-bar-info" id="lf-res-info-c">0 / 0%</div>
+      </div>
+    </div>
+
+    <!-- Podium provisoire -->
+    <div>
+      <div class="lf-section-label" style="margin-bottom:16px;">Classement provisoire</div>
+      <div class="lf-podium" id="lf-podium"></div>
+      <div class="lf-top5"   id="lf-top5"></div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;padding-bottom:24px;">
+      <button class="lv-btn lv-btn-gold"    onclick="lfAffaireSuivante()">Affaire suivante →</button>
+      <button class="lv-btn lv-btn-primary" onclick="lfRetourGame()">← Retour</button>
+      <button class="lv-btn lv-btn-danger"  onclick="lfTerminerConfirm()">Terminer la session</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QUIZ FORMATEUR ════════════════════════════════════════════ -->
+<div id="lf-quiz" class="lv-screen">
+  <div class="lf-quiz-inner">
+    <div class="lf-quiz-header">
+      <div class="lf-quiz-title">Quiz de validation</div>
+      <div class="lf-quiz-sub">Les participants répondent sur leur téléphone</div>
+    </div>
+    <div class="lf-quiz-question-wrap" id="lf-quiz-question-wrap">
+      <!-- Question courante affichée ici -->
+    </div>
+    <div class="lf-quiz-votes-wrap">
+      <div class="lf-section-label">Votes reçus</div>
+      <div class="lf-vote-live-count" id="lf-quiz-vote-count">
+        <div class="lf-vote-big-number" id="lf-quiz-big-number">0</div>
+        <div class="lf-vote-big-label">vote(s) reçu(s)</div>
+      </div>
+      <!-- Timer SVG (réutilisé) -->
+      <div class="lf-timer-wrap" id="lf-quiz-timer-wrap">
+        <svg class="lf-timer-svg" width="72" height="72" viewBox="0 0 72 72">
+          <circle class="lf-timer-bg" cx="36" cy="36" r="30"/>
+          <circle class="lf-timer-arc" id="lf-quiz-timer-arc" cx="36" cy="36" r="30"
+            stroke-dasharray="188.5" stroke-dashoffset="0"/>
+          <text class="lf-timer-text" id="lf-quiz-timer-text" x="36" y="36">30</text>
+        </svg>
+        <div class="lf-timer-label">Secondes restantes</div>
+      </div>
+    </div>
+    <div class="lf-quiz-actions">
+      <button class="lv-btn lv-btn-gold" id="lf-quiz-btn-correction" onclick="lfQuizAfficherCorrection()" style="display:none">
+        Afficher la correction →
+      </button>
+      <button class="lv-btn lv-btn-primary" id="lf-quiz-btn-suivant" onclick="lfQuizQuestionSuivante()" style="display:none">
+        Question suivante →
+      </button>
+      <button class="lv-btn lv-btn-gold lv-btn-lg" id="lf-quiz-btn-fin" onclick="lfQuizTerminer()" style="display:none">
+        Voir les résultats finaux →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DEBRIEF POST-SESSION ══════════════════════════════════════ -->
+<div id="lf-debrief" class="lv-screen">
+  <div class="lf-debrief-inner">
+
+    <div class="lf-debrief-header">
+      <div class="lf-debrief-title">Analyse de session</div>
+      <div class="lf-debrief-sub">Synthèse pédagogique — Résultats du groupe</div>
+    </div>
+
+    <div class="lf-debrief-grid">
+
+      <!-- Bloc 1 : Top 3 affaires échouées -->
+      <div class="lf-debrief-card">
+        <div class="lf-debrief-card-title">Affaires les plus difficiles</div>
+        <div id="lf-db-affaires-ratees"></div>
+      </div>
+
+      <!-- Bloc 2 : Réflexes manqués -->
+      <div class="lf-debrief-card">
+        <div class="lf-debrief-card-title">Réflexes à renforcer</div>
+        <div id="lf-db-reflexes"></div>
+      </div>
+
+      <!-- Bloc 3 : Camembert profils éthiques -->
+      <div class="lf-debrief-card lf-debrief-card-pie">
+        <div class="lf-debrief-card-title">Profils éthiques du groupe</div>
+        <div class="lf-db-pie-wrap">
+          <svg id="lf-db-pie" width="180" height="180" viewBox="0 0 180 180"></svg>
+          <div class="lf-db-pie-legend" id="lf-db-pie-legend"></div>
+        </div>
+      </div>
+
+    </div><!-- /.lf-debrief-grid -->
+
+    <div class="lf-debrief-actions">
+      <button class="lv-btn lv-btn-gold lv-btn-lg" onclick="window.print()">Exporter en PDF</button>
+      <button class="lv-btn lv-btn-primary" onclick="lfVoirClassementFinal()">Classement complet →</button>
+      <button class="lv-btn lv-btn-ghost" onclick="lfNouvelleSession()">Nouvelle session</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ FIN ══════════════════════════════════════════════════════ -->
+<div id="lf-fin" class="lv-screen">
+  <!-- Canvas confetti fixe en overlay -->
+  <canvas id="lf-fin-canvas" class="lf-fin-canvas"></canvas>
+
+  <!-- Zone haute : podium compact -->
+  <div class="lf-fin-podium" id="lf-fin-podium">
+    <div class="lf-fin-title">🏁 Session terminée</div>
+    <div class="lf-stats-grid" id="lf-stats-grid"></div>
+    <!-- Top 3 -->
+    <div class="lf-fin-top3" id="lf-fin-top3"></div>
+  </div>
+
+  <!-- Zone basse : classement scrollable -->
+  <div class="lf-fin-scroll" id="lf-fin-scroll">
+    <div class="lf-section-label" style="margin-bottom:10px;">Classement complet</div>
+    <div class="lf-classement" id="lf-classement"></div>
+
+    <div class="lf-section-label" style="margin:20px 0 10px;">Par affaire</div>
+    <div class="lf-affaires-stats" id="lf-affaires-stats"></div>
+
+    <div class="lf-fin-actions">
+      <button class="lv-btn lv-btn-gold lv-btn-lg" onclick="_lfEcranDebrief()">Analyse pédagogique →</button>
+      <button class="lv-btn lv-btn-primary" onclick="LiveSession.exporterCSV(_lfState.sessionId)">Exporter CSV</button>
+      <button class="lv-btn lv-btn-ghost"   onclick="lfNouvelleSession()">Nouvelle session</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/live-formateur.js"></script>
+</body>
+</html>

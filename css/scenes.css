@@ -1,0 +1,186 @@
+/* ══════════════════════════════════════════
+   SCENES — image backgrounds + animated overlays
+══════════════════════════════════════════ */
+#scene{position:absolute;inset:0;z-index:0;overflow:hidden;}
+
+.sc-prologue,.sc-rh,.sc-bureau1,.sc-bureauf,.sc-mairie,.sc-bureau2,
+.sc-finance,.sc-commercial,.sc-tennis,.sc-restojour,.sc-bureau9,.sc-bureaujour,
+.sc-resto,.sc-bistro,.sc-sallereunion,.sc-pesee,.sc-indus,.sc-epilogue,
+.sc-maintenance,.sc-maintenancereunion,.sc-maintenancebureau,.sc-nuitcollecte{
+  position:absolute;inset:0;
+}
+
+/* ── Phone overlay (finance + bureau9 scenes) ── */
+.sc-phone-overlay{
+  position:absolute;
+  bottom:12%;right:6%;
+  height:44vh;width:auto;
+  object-fit:contain;
+  filter:drop-shadow(0 8px 28px rgba(0,0,0,.6));
+  z-index:1;
+  opacity:0;  /* starts hidden — revealed by revealScenePhone() */
+}
+.sc-phone-overlay.sc-phone-visible{
+  animation:phone-appear-vibrate 2.8s ease forwards;
+}
+@keyframes phone-appear-vibrate{
+  0%  {opacity:0;transform:scale(.85) rotate(0deg) translateX(0);}
+  15% {opacity:1;transform:scale(1)   rotate(0deg) translateX(0);}
+  /* vibration burst 1 */
+  22% {transform:scale(1) rotate(-8deg) translateX(-4px);}
+  28% {transform:scale(1) rotate( 8deg) translateX( 4px);}
+  34% {transform:scale(1) rotate(-8deg) translateX(-4px);}
+  40% {transform:scale(1) rotate( 8deg) translateX( 4px);}
+  46% {transform:scale(1) rotate( 0deg) translateX(0);}
+  /* pause */
+  60% {transform:scale(1) rotate( 0deg) translateX(0);}
+  /* vibration burst 2 */
+  67% {transform:scale(1) rotate(-6deg) translateX(-3px);}
+  73% {transform:scale(1) rotate( 6deg) translateX( 3px);}
+  79% {transform:scale(1) rotate(-6deg) translateX(-3px);}
+  85% {transform:scale(1) rotate( 6deg) translateX( 3px);}
+  91% {transform:scale(1) rotate( 0deg) translateX(0);}
+  100%{opacity:1;transform:scale(1) rotate(0deg) translateX(0);}
+}
+
+/* ── Background image fills scene ── */
+.sc-bg{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;
+  object-position:center bottom;
+  display:block;
+}
+
+/* ── Vignette for dialogue readability ── */
+.scene-vignette{
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(0deg,
+    rgba(4,6,14,.95) 0%,
+    rgba(4,6,14,.65) 30%,
+    rgba(4,6,14,.2) 55%,
+    transparent 72%);
+}
+
+/* ══ PROLOGUE — rain + city lights ══ */
+.rain-drop{
+  position:absolute;top:-20px;
+  width:1px;
+  background:linear-gradient(180deg,transparent,rgba(180,210,255,.55));
+  border-radius:1px;
+  animation:rainFall linear infinite;
+  z-index:3;pointer-events:none;
+}
+@keyframes rainFall{from{transform:translateY(0);}to{transform:translateY(110vh);}}
+
+.city-light{
+  border-radius:50%;
+  animation:cityBlink ease-in-out infinite alternate;
+  z-index:3;pointer-events:none;
+}
+@keyframes cityBlink{0%{opacity:.3;}100%{opacity:1;}}
+
+/* ══ RH — dust motes ══ */
+.dust-mote{
+  position:absolute;width:2px;height:2px;
+  background:rgba(255,255,220,.6);border-radius:50%;
+  animation:dustFloat linear infinite;
+  z-index:3;pointer-events:none;
+}
+@keyframes dustFloat{
+  0%{transform:translateY(0) translateX(0);opacity:0;}
+  15%{opacity:1;}85%{opacity:.5;}
+  100%{transform:translateY(-100px) translateX(20px);opacity:0;}
+}
+
+/* ══ RESTO — candle shimmer ══ */
+.candle-particle{
+  position:absolute;width:3px;height:3px;
+  background:rgba(255,180,60,.5);border-radius:50%;
+  animation:candleShimmer ease-in-out infinite;
+  z-index:3;pointer-events:none;
+}
+@keyframes candleShimmer{
+  0%{transform:translateY(0) scale(1);opacity:0;}
+  20%{opacity:.8;}
+  100%{transform:translateY(-60px) scale(.3);opacity:0;}
+}
+
+/* ══ INDUS — clouds + smoke ══ */
+.sc-cloud{
+  position:absolute;
+  background:rgba(210,222,232,.45);border-radius:40px;
+  filter:blur(5px);
+  animation:cloudDrift linear infinite;
+  z-index:3;pointer-events:none;
+}
+@keyframes cloudDrift{from{transform:translateX(-200px);}to{transform:translateX(calc(100vw + 200px));}}
+
+.sc-smoke-puff{
+  position:absolute;width:18px;height:18px;
+  background:rgba(170,175,180,.4);border-radius:50%;
+  animation:smokeRise ease-out infinite;
+  filter:blur(3px);z-index:3;pointer-events:none;
+}
+@keyframes smokeRise{
+  0%{transform:translateY(0) scale(1);opacity:.55;}
+  60%{opacity:.2;}
+  100%{transform:translateY(-80px) scale(2.5);opacity:0;}
+}
+
+/* ══ EPILOGUE — shooting stars ══ */
+.shooting-star{
+  position:absolute;width:2px;height:2px;
+  background:white;border-radius:50%;
+  box-shadow:0 0 4px white;
+  animation:shootAcross linear infinite;
+  z-index:3;
+}
+.shooting-star::after{
+  content:'';position:absolute;top:50%;right:2px;
+  transform:translateY(-50%);
+  width:65px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55));
+}
+@keyframes shootAcross{
+  0%{transform:translate(0,0);opacity:0;}
+  3%{opacity:1;}
+  18%{transform:translate(220px,220px);opacity:0;}
+  100%{transform:translate(220px,220px);opacity:0;}
+}
+
+
+/* ══ TENNIS — lumière solaire extérieure ══ */
+.sun-flare{
+  position:absolute;
+  width:4px;height:4px;
+  background:rgba(255,240,180,.7);border-radius:50%;
+  animation:sunFlicker ease-in-out infinite;
+  z-index:3;pointer-events:none;
+  filter:blur(1px);
+}
+@keyframes sunFlicker{
+  0%,100%{opacity:0;transform:scale(1);}
+  40%{opacity:.6;transform:scale(1.6);}
+  70%{opacity:.3;transform:scale(1.2);}
+}
+
+/* ── Investigation hotspots ── */
+.hs-zone{
+  position:absolute;
+  cursor:zoom-in;
+  border-radius:8px;
+  border:1.5px solid transparent;
+  transition:box-shadow .3s ease, border-color .3s ease;
+  z-index:5;
+}
+.hs-zone:hover{
+  border-color:rgba(255,220,100,.3);
+  box-shadow:0 0 14px 4px rgba(255,220,100,.12),
+             inset 0 0 10px rgba(255,220,100,.07);
+}
+.hs-zone.hs-found{
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .6s ease;
+}
