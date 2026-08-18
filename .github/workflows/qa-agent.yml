@@ -1,0 +1,72 @@
+name: QA Agent
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Mode QA
+        required: true
+        default: fast
+        type: choice
+        options:
+          - fast
+          - full
+          - narrative-only
+          - spelling-only
+
+jobs:
+  qa:
+    name: QA Agent (${{ github.event.inputs.mode || 'fast' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: qa-agent
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: qa-agent/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright (Chromium only)
+        run: npx playwright install chromium --with-deps
+
+      - name: Run QA Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          QA_BASE_URL: https://projet-horizon-sem.vercel.app
+          QA_DB_PATH: ./qa-agent.db
+          QA_REPORT_DIR: ./reports
+        run: |
+          MODE="${{ github.event.inputs.mode || 'fast' }}"
+          npx ts-node agent/index.ts --${MODE} --report-dir ./reports
+
+      - name: Upload QA Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-report-${{ github.run_id }}
+          path: |
+            qa-agent/reports/
+            qa-agent/qa-agent.db
+          retention-days: 30
+
+      - name: Upload Playwright traces (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ github.run_id }}
+          path: qa-agent/test-results/
+          retention-days: 7

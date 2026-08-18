@@ -1,0 +1,26 @@
+{
+  "name": "projet-horizon-qa-agent",
+  "version": "1.0.0",
+  "description": "Agent QA autonome pour Projet Horizon",
+  "private": true,
+  "scripts": {
+    "qa:fast": "ts-node agent/index.ts --fast",
+    "qa:full": "ts-node agent/index.ts --full",
+    "qa:narrative": "ts-node agent/index.ts --narrative-only",
+    "qa:spelling": "ts-node agent/index.ts --spelling-only",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "better-sqlite3": "^11.3.0",
+    "commander": "^12.1.0",
+    "playwright": "^1.61.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.0"
+  }
+}
