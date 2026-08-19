@@ -22,7 +22,7 @@ const SERVICES=[
     risques:['Prise illégale d\'intérêts','Détournement de fonds'],
   },
   {
-    id:'achats', em:'📦', label:'Achats / Marchés publics',
+    id:'achats', em:'📦', label:'Achats',
     priority:[1,5],
     mapBox:{x:62,y:35,w:18,h:22}, mapColor:'#d888f8',
     desc:'Pilote les marchés publics de la SEM. Au cœur des risques de favoritisme et de corruption passive.',

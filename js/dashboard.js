@@ -48,7 +48,7 @@ const CHAPTER_DEBRIEF = [
 const SERVICE_LABELS = {
   dg:         'Direction Générale',
   rh:         'Ressources Humaines',
-  achats:     'Achats / Marchés',
+  achats:     'Achats',
   juridique:  'Juridique / Conformité',
   finance:    'Finance / Comptabilité',
   commercial: 'Commercial',
