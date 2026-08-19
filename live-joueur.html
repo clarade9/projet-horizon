@@ -45,6 +45,19 @@
   </div>
 </div>
 
+<!-- ══ PROLOGUE SLIDE (synchronisé avec le formateur) ════════════ -->
+<div id="lj-prologue-slide" class="lv-screen lj-screen-card">
+  <div class="lj-dlg-card lj-prologue-card">
+    <div class="lj-prologue-eyebrow" id="lj-prologue-num">Slide 1 / 5</div>
+    <div class="lj-prologue-title" id="lj-prologue-title"></div>
+    <div class="lj-prologue-body" id="lj-prologue-body"></div>
+    <div class="lj-lu-row">
+      <span class="lj-lu-compteur" id="lj-prologue-lu-compteur"></span>
+      <button class="lv-btn lv-btn-gold lj-btn-lu" id="lj-btn-prologue-lu" onclick="ljSignalerLuPrologue()">J'ai lu ✓</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ ATTENTE ══════════════════════════════════════════════════ -->
 <div id="lj-attente" class="lv-screen">
   <div class="lj-attente-inner">
@@ -280,6 +293,31 @@
   </div>
 </div>
 
+<script>
+// ── Contenu des slides prologue HTML (copié depuis live-formateur.html) ──
+const LJ_PROLOGUE_SLIDES = [
+  {
+    titre: 'PROJET HORIZON — Formation Anticorruption',
+    corps:  'Session de formation — Bienvenue'
+  },
+  {
+    titre: 'Le contexte',
+    corps:  'Vous travaillez pour une SEM — une Société d\'Économie Mixte.<br><br>Vous prenez des décisions qui engagent votre responsabilité.<br><br>Aujourd\'hui, vous allez faire face à des <strong>situations ambiguës</strong> tirées de la réalité du terrain.'
+  },
+  {
+    titre: 'L\'enjeu',
+    corps:  'La corruption ne ressemble pas toujours à ce qu\'on imagine.<br><br><em>Elle commence souvent par un service rendu, un déjeuner accepté, une procédure contournée « juste cette fois ».</em>'
+  },
+  {
+    titre: 'Comment ça marche',
+    corps:  '<ol style="padding-left:1.2em;line-height:2"><li>Vous observez la scène</li><li>Vous votez depuis votre téléphone</li><li>On analyse ensemble les résultats</li></ol><br><span style="opacity:.6">Pas de jugement.<br>Que des apprentissages.</span>'
+  },
+  {
+    titre: 'C\'est parti !',
+    corps:  'Tous les participants sont connectés.<br>La formation commence.'
+  },
+];
+</script>
 <script src="js/live-joueur.js"></script>
 </body>
 </html>

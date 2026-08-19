@@ -3568,4 +3568,86 @@ body#live-resultats > * {
   opacity: .75;
   font-style: italic;
 }
+
+/* ══ TIMER SÉLECTEUR DÉCISION ══════════════════════════════════ */
+.lf-timer-select-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lf-timer-select-label {
+  font-size: 12px;
+  color: var(--lv-text2);
+  font-family: var(--lv-mono);
+  white-space: nowrap;
+}
+.lf-timer-btns {
+  display: flex;
+  gap: 6px;
+}
+.lf-timer-opt {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.15);
+  color: var(--lv-text2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--lv-mono);
+  transition: all .15s;
+}
+.lf-timer-opt-active,
+.lf-timer-opt:hover {
+  background: var(--lv-gold);
+  color: #000;
+  border-color: var(--lv-gold);
+}
 #lf-btn-ouvrir:hover { opacity: 1; }
+
+
+/* ══ ÉCRAN PROLOGUE SLIDE JOUEUR ════════════════════════════════ */
+.lj-screen-card {
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.lj-prologue-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  background: linear-gradient(135deg, rgba(27,42,74,.95) 0%, rgba(15,24,46,.97) 100%);
+  border: 1.5px solid var(--lv-border-gold);
+  border-radius: 20px;
+  box-shadow: var(--lv-shadow), var(--lv-shadow-gold);
+}
+.lj-prologue-eyebrow {
+  font-family: var(--lv-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .2em;
+  color: var(--lv-gold);
+}
+.lj-prologue-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}
+.lj-prologue-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255,255,255,.8);
+}
+.lj-lu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+.lj-lu-row .lj-lu-compteur {
+  font-size: 13px;
+  color: var(--lv-text2);
+}

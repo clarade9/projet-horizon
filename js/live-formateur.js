@@ -2,14 +2,17 @@
 // LIVE FORMATEUR — Logique UI de l'écran projeté formateur
 // ═══════════════════════════════════════════════════════════════
 
-const TIMER_DUREE = 30; // secondes
+let _lfTimerDecision = 60;  // défaut 60s — configurable via lfSetTimerDecision()
+let _lfTimerReflexe  = 90;  // défaut 90s (pour usage futur côté joueur)
 
 // ── Prénoms fixes par affaire (mode Live) ───────────────────────
 const _LF_PRENOMS = ['Sophie','Thomas','Claire','Marc','Julie','Nicolas','Isabelle','Laurent','Camille','Éric','Julien'];
 function _lfPrenom(affaireIdx) { return _LF_PRENOMS[affaireIdx] || ''; }
 function _lfTxt(texte, affaireIdx) {
   if (!texte) return texte;
-  return texte.replace(/\{pr[ée]nom\}/gi, _lfPrenom(affaireIdx));
+  // Côté formateur : remplace {prénom} par "[prénom]" (placeholder lisible) si pas de nom défini
+  const prenom = _lfPrenom(affaireIdx) || '[prénom]';
+  return texte.replace(/\{pr[ée]nom\}/gi, prenom);
 }
 
 // ── État local ─────────────────────────────────────────────────
@@ -21,7 +24,7 @@ let _lfState = {
   parcours:        [],      // liste ordonnée des indices d'affaires à jouer
   parcoursPos:     -1,      // position courante dans parcours
   timerInterval:      null,
-  timerSecondes:      TIMER_DUREE,
+  timerSecondes:      60,
   countdownInterval:  null,  // C5 — compte à rebours avant ouverture auto des votes
   autoFermerTimeout:  null,  // C4 — délai auto-fermeture quand tous ont voté
   _pollVotesInterval: null, // polling Supabase en fallback du broadcast
@@ -238,6 +241,36 @@ function _lfPrologueAfficherSlide(n) {
   // Bouton nav : masqué sur le slide 5 (QR + bouton lancer intégré)
   const btn = _lf$('lf-pro-btn-next');
   if (btn) btn.style.display = n === _LF_PRO_TOTAL - 1 ? 'none' : '';
+
+  // Diffuser la slide aux joueurs et brancher la lecture collective
+  if (_lfState.sessionId && _lfState.formateurToken) {
+    LiveSession.diffuserPrologueSlide(_lfState.sessionId, _lfState.formateurToken, n);
+    _lfBrancherLecturePrologue(n);
+  }
+}
+
+function _lfBrancherLecturePrologue(slideIdx) {
+  const nb = _lfState.participants.length;
+  if (nb === 0) return;
+  const ligneId = 'prologue_slide_' + slideIdx;
+  _lfState.lectureAutoActif = true;
+
+  const el = _lf$('lf-pro-lecture-indicateur');
+  if (el) { el.style.display = ''; el.textContent = '0 / ' + nb + ' ont lu'; }
+
+  LiveSession.abonnerLecture(
+    _lfState.sessionCode, ligneId, nb,
+    () => {
+      // Tous ont lu — passage auto après 3s
+      if (el) el.className = 'lf-lecture-indicateur lf-lecture-tous';
+      _lfState._lectureTimeout = setTimeout(() => {
+        if (_lfState.lectureAutoActif) lfPrologueSuivant();
+      }, 3000);
+    },
+    (actuel, total) => {
+      if (el) el.textContent = actuel + ' / ' + total + ' ont lu';
+    }
+  );
 }
 
 function lfPrologueSuivant() {
@@ -798,7 +831,7 @@ function lfOuvrirVotesNow() {
   const ch = CHAPTERS[_lfState.affaireIdx];
   if (ch) _lfRendreVote(ch);
   _lfSetPhase('votes_ouverts');
-  LiveSession.ouvrirVotes(_lfState.sessionId, _lfState.formateurToken, _lfState.votesOuvertDepuis);
+  LiveSession.ouvrirVotes(_lfState.sessionId, _lfState.formateurToken, _lfState.votesOuvertDepuis, _lfTimerDecision);
   _lfStartTimer();
   _lfStartPollVotes();
 }
@@ -1418,13 +1451,14 @@ function _lfConfettiFin() {
 
 // ── Gestion du timer ─────────────────────────────────────────────
 function _lfResetTimer() {
-  _lfState.timerSecondes = TIMER_DUREE;
-  _lfUpdateTimer(TIMER_DUREE);
+  _lfState.timerSecondes = _lfTimerDecision;
+  _lfUpdateTimer(_lfTimerDecision);
 }
 
 function _lfStartTimer() {
-  _lfState.timerSecondes = TIMER_DUREE;
-  _lfUpdateTimer(TIMER_DUREE);
+  _lfState.timerSecondes = _lfTimerDecision;
+  _lfUpdateTimer(_lfTimerDecision);
+  if (_lfTimerDecision === 0) return; // mode sans limite — pas de décompte automatique
   _lfState.timerInterval = setInterval(() => {
     _lfState.timerSecondes--;
     _lfUpdateTimer(_lfState.timerSecondes);
@@ -1441,16 +1475,19 @@ function _lfUpdateTimer(secs) {
   const txt  = _lf$('lf-timer-text');
   if (!arc || !txt) return;
   const total = 2 * Math.PI * 30;
-  const offset = total * (1 - secs / TIMER_DUREE);
+  // En mode sans limite (0) : arc plein, texte ∞
+  const duree = _lfTimerDecision > 0 ? _lfTimerDecision : 1;
+  const offset = _lfTimerDecision === 0 ? 0 : total * (1 - secs / duree);
   arc.setAttribute('stroke-dashoffset', offset.toFixed(2));
-  txt.textContent = Math.max(0, secs);
-  const urgent = secs <= 10;
+  txt.textContent = _lfTimerDecision === 0 ? '∞' : Math.max(0, secs);
+  const urgent = _lfTimerDecision > 0 && secs <= 10;
   arc.classList.toggle('urgent', urgent);
   txt.classList.toggle('urgent', urgent);
 }
 
 // ── Nouveau vote reçu (Canal B) ──────────────────────────────────
 function _lfOnNouveauVote(vote) {
+  console.log('[Formateur] vote reçu:', vote);
   // Réflexe pro : mettre à jour le compteur de réponses
   if (vote.phase === 'reflexe') {
     if (!_lfState.joueurVotes['r_' + vote.joueur_id]) {
@@ -1622,6 +1659,10 @@ function _lfSetPhase(phase) {
   // Timer seulement pendant vote décision
   const timerWrap = _lf$('lf-timer-wrap');
   if (timerWrap) timerWrap.style.display = ['affaire_active','votes_ouverts'].includes(phase) ? '' : 'none';
+
+  // Sélecteur de durée : visible seulement en phase pré-vote (affaire_active)
+  const timerSelectRow = _lf$('lf-timer-select-row');
+  if (timerSelectRow) timerSelectRow.style.display = phase === 'affaire_active' ? '' : 'none';
 
   const btns = {
     'lf-btn-dlg-next':           phase === 'dialogue',
@@ -1890,12 +1931,13 @@ function _lfOnQuizVote(vote) {
 
 function _lfStartQuizTimer() {
   if (_lfState.quizTimer) clearInterval(_lfState.quizTimer);
-  let secs = TIMER_DUREE;
-  _lfUpdateQuizTimer(secs);
+  const QUIZ_DUREE = 30; // Timer quiz fixe à 30s (indépendant du timer décision)
+  let secs = QUIZ_DUREE;
+  _lfUpdateQuizTimer(secs, QUIZ_DUREE);
   _lf$('lf-quiz-timer-wrap').style.display = '';
   _lfState.quizTimer = setInterval(() => {
     secs--;
-    _lfUpdateQuizTimer(secs);
+    _lfUpdateQuizTimer(secs, QUIZ_DUREE);
     if (secs <= 0) {
       clearInterval(_lfState.quizTimer);
       _lfState.quizTimer = null;
@@ -1903,12 +1945,13 @@ function _lfStartQuizTimer() {
   }, 1000);
 }
 
-function _lfUpdateQuizTimer(secs) {
+function _lfUpdateQuizTimer(secs, dureeTotal) {
   const arc = _lf$('lf-quiz-timer-arc');
   const txt = _lf$('lf-quiz-timer-text');
   if (!arc || !txt) return;
   const total  = 2 * Math.PI * 30;
-  const offset = total * (1 - secs / TIMER_DUREE);
+  const duree  = dureeTotal || 30;
+  const offset = total * (1 - secs / duree);
   arc.setAttribute('stroke-dashoffset', offset.toFixed(2));
   txt.textContent = Math.max(0, secs);
   arc.classList.toggle('urgent', secs <= 10);
@@ -1955,4 +1998,16 @@ function lfQuizQuestionSuivante() {
 
 function lfQuizTerminer() {
   lfTerminer();
+}
+
+// ── Sélecteur de durée du timer décision ─────────────────────────
+function lfSetTimerDecision(secs) {
+  _lfTimerDecision = secs;
+  document.querySelectorAll('.lf-timer-opt').forEach(btn => btn.classList.remove('lf-timer-opt-active'));
+  const btns = document.querySelectorAll('.lf-timer-opt');
+  const vals = [30, 60, 90, 0];
+  const idx = vals.indexOf(secs);
+  if (btns[idx]) btns[idx].classList.add('lf-timer-opt-active');
+  // Mettre à jour l'affichage du timer si on est en phase "pré-vote" (pas encore lancé)
+  _lfResetTimer();
 }

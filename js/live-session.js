@@ -194,11 +194,14 @@ const LiveSession = (() => {
     return _melangerOrdre(String(affaireIdx) + '|' + votesOuvertDepuis);
   }
 
-  function ouvrirVotes(sessionId, token, timestamp) {
-    return _changerPhase(sessionId, token, {
+  function ouvrirVotes(sessionId, token, timestamp, timerDuree) {
+    const updates = {
       phase: 'votes_ouverts',
       votes_ouverts_depuis: timestamp || new Date().toISOString(),
-    });
+    };
+    // Transmettre la durée du timer si fournie (champ timer_duree dans sessions_live)
+    if (timerDuree !== undefined) updates.timer_duree = timerDuree;
+    return _changerPhase(sessionId, token, updates);
   }
 
   function fermerVotes(sessionId, token) {
@@ -241,7 +244,6 @@ const LiveSession = (() => {
     try {
       await sb.from('votes_live').insert(payload);
     } catch(e) { console.error('[LiveSession] voterReflexe:', e); return null; }
-    await _broadcastVote(payload);
     return true;
   }
 
@@ -305,8 +307,6 @@ const LiveSession = (() => {
         .single();
 
       if (error) { console.error('voter:', error); return null; }
-
-      await _broadcastVote({ ...payload, score: data.score, est_correct: data.est_correct });
 
       const indexCorrect = ch ? ch.choices.findIndex(c => c.type === 'good') : -1;
       return { score: data.score, estCorrect: data.est_correct, indexCorrect };
@@ -510,37 +510,30 @@ const LiveSession = (() => {
   }
 
   // ── Abonnement Canal B : votes → formateur ────────────────────
-  // Migration Broadcast : ne nécessite pas REPLICA IDENTITY FULL sur votes_live
-  // postgres_changes conservé en commentaire pour référence / fallback éventuel
+  // Utilise postgres_changes (INSERT sur votes_live) — fiable cross-page.
+  // Nécessite que votes_live soit dans la publication Realtime de Supabase
+  // (Supabase → Database → Replication → cocher votes_live si absent).
   function abonnerVotes(sessionId, onNouveauVote) {
     const sb = _getClient();
     if (!sb) return;
 
-    _votesChannel = sb.channel(`votes-broadcast:${sessionId}`)
-      .on('broadcast', { event: 'vote' }, ({ payload }) => {
-        if (payload && String(payload.session_id) === String(sessionId)) {
-          onNouveauVote(payload);
+    _votesChannel = sb.channel(`votes:${sessionId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'votes_live',
+        filter: `session_id=eq.${sessionId}`
+      }, ({ new: row }) => {
+        if (row && String(row.session_id) === String(sessionId)) {
+          onNouveauVote(row);
         }
       })
       .subscribe((status, err) => {
-        if (err) console.error('[LiveSession] abonnerVotes subscribe error:', err);
+        if (err) console.error('[LiveSession] abonnerVotes error:', err);
         else console.log('[LiveSession] abonnerVotes status:', status);
       });
     _canaux.push(_votesChannel);
     return _votesChannel;
-
-    /* postgres_changes fallback (nécessite REPLICA IDENTITY FULL sur votes_live) :
-    const ch = sb.channel(`votes:${sessionId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes_live' },
-        payload => {
-          if (payload.new && String(payload.new.session_id) === String(sessionId)) {
-            onNouveauVote(payload.new);
-          }
-        })
-      .subscribe();
-    _canaux.push(ch);
-    return ch;
-    */
   }
 
   // ── Abonnement Canal C : Presence ────────────────────────────
@@ -740,6 +733,14 @@ const LiveSession = (() => {
     }
   }
 
+  // ── Diffuser une slide du prologue HTML (formateur → joueurs) ──
+  function diffuserPrologueSlide(sessionId, token, slideIdx) {
+    return _changerPhase(sessionId, token, {
+      phase: 'prologue_slide',
+      prologue_slide_idx: slideIdx,
+    });
+  }
+
   // ── Fermer tous les canaux ────────────────────────────────────
   function seDesabonner() {
     const sb = _getClient();
@@ -759,6 +760,7 @@ const LiveSession = (() => {
     lireEtat,
     lancerAffaire,
     diffuserDialogue,
+    diffuserPrologueSlide,
     ouvrirVotes,
     fermerVotes,
     ouvrirReflexe,

@@ -2,13 +2,14 @@
 // LIVE JOUEUR — Logique UI de l'écran mobile participant
 // ═══════════════════════════════════════════════════════════════
 
-const TIMER_JOUEUR = 30; // secondes (doit correspondre au formateur)
+const TIMER_JOUEUR = 60; // secondes — défaut, synchronisé avec _lfTimerDecision du formateur
 
-// ── Prénoms fixes par affaire (mode Live) ───────────────────────
+// ── Prénoms fixes par affaire (mode Live) — fallback si pas de nom joueur ──
 const _LJ_PRENOMS = ['Sophie','Thomas','Claire','Marc','Julie','Nicolas','Isabelle','Laurent','Camille','Éric'];
 function _ljTxt(texte, affaireIdx) {
   if (!texte) return texte;
-  return texte.replace(/\{pr[ée]nom\}/gi, _LJ_PRENOMS[affaireIdx] || '');
+  const prenom = (_ljState && _ljState.joueurNom) ? _ljState.joueurNom : (_LJ_PRENOMS[affaireIdx] || '');
+  return texte.replace(/\{pr[ée]nom\}/gi, prenom);
 }
 
 // ── État local ─────────────────────────────────────────────────
@@ -37,9 +38,13 @@ let _ljState = {
   quizScore:         0,
   quizCorrects:      0,
   // Lecture collective
-  aLu:               false,
-  ligneIdCourante:   null,
-  nbParticipants:    0,
+  aLu:                     false,
+  ligneIdCourante:         null,
+  nbParticipants:          0,
+  _lectureTickerInterval:  null, // ticker anti-skip (délai lecture min)
+  _texteEtapeCourrante:    '',   // texte de l'étape courante pour le délai
+  // Timer décision (synchronisé depuis formateur via champ timer_duree)
+  timerDuree:              TIMER_JOUEUR,
   // Réflexe pro
   reflexeQSel:       [],   // indices questions sélectionnées
   reflexeASel:       [],   // indices actions sélectionnées
@@ -51,10 +56,52 @@ let _ljState = {
 function _lj$(id) { return document.getElementById(id); }
 
 function _ljScreen(id) {
-  ['lj-entree','lj-attente','lj-dialogue','lj-reflexe','lj-reflexe-confirme','lj-vote','lj-confirme','lj-resultats','lj-podium','lj-quiz','lj-quiz-result','lj-fin'].forEach(s => {
+  ['lj-entree','lj-prologue-slide','lj-attente','lj-dialogue','lj-reflexe','lj-reflexe-confirme','lj-vote','lj-confirme','lj-resultats','lj-podium','lj-quiz','lj-quiz-result','lj-fin'].forEach(s => {
     const el = _lj$(s);
     if (el) el.classList.toggle('on', s === id);
   });
+}
+
+// ── Prologue slide (synchronisé avec le formateur) ─────────────
+function _ljAfficherPrologueSlide(idx) {
+  // LJ_PROLOGUE_SLIDES est défini dans un <script> dans live-joueur.html
+  const slides = (typeof LJ_PROLOGUE_SLIDES !== 'undefined') ? LJ_PROLOGUE_SLIDES : [];
+  const slide = slides[idx];
+  if (!slide) { _ljScreen('lj-attente'); return; }
+
+  const numEl  = _lj;
+  const titEl  = _lj;
+  const bodEl  = _lj;
+  if (numEl)  numEl.textContent  = 'Slide ' + (idx + 1) + ' / ' + slides.length;
+  if (titEl)  titEl.textContent  = slide.titre || '';
+  if (bodEl)  bodEl.innerHTML    = slide.corps || '';
+
+  // Bouton Lu
+  const ligneId = 'prologue_slide_' + idx;
+  _ljState.ligneIdCourante = ligneId;
+  _ljState.aLu = false;
+  const btn = _lj;
+  if (btn) { btn.classList.remove('lj-btn-lu-done'); btn.disabled = false; }
+
+  const nb = Math.max(1, _ljState.nbParticipants);
+  LiveSession.abonnerLecture(_ljState.sessionCode, ligneId, nb,
+    () => { /* passage géré côté formateur */ },
+    (actuel, total) => {
+      const el = _lj;
+      if (el) el.textContent = actuel + ' / ' + total + ' ont lu';
+    }
+  );
+
+  _ljScreen('lj-prologue-slide');
+}
+
+function ljSignalerLuPrologue() {
+  const ligneId = _ljState.ligneIdCourante;
+  if (!ligneId || _ljState.aLu) return;
+  _ljState.aLu = true;
+  const btn = _lj;
+  if (btn) { btn.classList.add('lj-btn-lu-done'); btn.disabled = true; }
+  LiveSession.marquerLu(_ljState.sessionCode, ligneId, _ljState.joueurNom);
 }
 
 // ── Init ───────────────────────────────────────────────────────
@@ -173,6 +220,14 @@ function _ljOnPhaseChange(etat) {
   const idx   = etat.affaire_active;
 
   switch (phase) {
+    case 'prologue_slide': {
+      const slideIdx = etat.prologue_slide_idx;
+      if (slideIdx !== undefined && slideIdx !== null) {
+        _ljAfficherPrologueSlide(slideIdx);
+      }
+      break;
+    }
+
     case 'affaire_active':
       _ljState.affaireIdx      = idx !== null && idx !== undefined ? idx : _ljState.affaireIdx;
       _ljState.aVote           = false;
@@ -231,8 +286,11 @@ function _ljOnPhaseChange(etat) {
       _ljState.affaireIdx = idx !== null ? idx : _ljState.affaireIdx;
       _ljState.aVote      = false;
       _ljState.votesOuvertDepuis = etat.votes_ouverts_depuis;
+      // Lire la durée du timer si transmise par le formateur (champ timer_duree), sinon défaut
+      _ljState.timerDuree = (etat.timer_duree !== undefined && etat.timer_duree !== null)
+        ? etat.timer_duree : TIMER_JOUEUR;
       _ljAfficherVote();
-      _ljStartTimer(etat.votes_ouverts_depuis);
+      _ljStartTimer(etat.votes_ouverts_depuis, _ljState.timerDuree);
       break;
 
     case 'votes_fermes':
@@ -510,7 +568,7 @@ function _ljAfficherLigneDlg(affaireIdx, cursor) {
     if (affaireEl)  affaireEl.textContent  = 'Introduction';
     if (progressEl) progressEl.textContent = (cursor + 1) + ' / ' + PROLOGUE.length;
     if (speakerEl)  speakerEl.textContent  = line.ch ? (line.ch.nm || line.sp) : (line.sp || '');
-    if (texteEl)    texteEl.innerHTML      = line.txt || '';
+    if (texteEl)    texteEl.innerHTML      = _ljTxt(line.txt, -1) || '';
     if (portraitEl && line.ch && line.ch.css) {
       const nom = line.ch.css.replace(/^c-/, '');
       portraitEl.src = 'assets/characters/' + nom + '.png';
@@ -526,7 +584,7 @@ function _ljAfficherLigneDlg(affaireIdx, cursor) {
     _ljState.ligneIdCourante = ligneId;
     if (nouveauLigneId) {
       _ljState.aLu = false;
-      _ljResetBoutonLu();
+      _ljResetBoutonLu(line.txt || '');
       const nb = Math.max(1, _ljState.nbParticipants);
       LiveSession.abonnerLecture(_ljState.sessionCode, ligneId, nb,
         () => { /* passage géré côté formateur */ },
@@ -579,11 +637,15 @@ function _ljAfficherLigneDlg(affaireIdx, cursor) {
     if (texteEl)    texteEl.innerHTML     = (ch.context?.title || '') +
       (ch.context?.body ? '<br><span style="font-size:13px;opacity:.6">' + ch.context.body + '</span>' : '');
     if (portraitEl) { portraitEl.src = ''; portraitEl.style.display = 'none'; }
+    // Texte de lecture pour le délai anti-skip
+    _ljState._texteEtapeCourrante = (ch.context?.body || ch.context?.title || '');
   } else {
     const line    = step.line;
     const speaker = line.ch ? (line.ch.nm || line.sp) : (line.sp || '');
     if (speakerEl) speakerEl.textContent = speaker;
     if (texteEl)   texteEl.innerHTML     = _ljTxt(line.txt, affaireIdx) || '';
+    // Texte de lecture pour le délai anti-skip
+    _ljState._texteEtapeCourrante = line.txt || '';
     // Portrait : dériver le nom de fichier depuis line.ch.css (ex: 'c-dominique' → 'dominique.png')
     if (portraitEl && line.ch && line.ch.css) {
       const nom = line.ch.css.replace(/^c-/, '');
@@ -607,7 +669,7 @@ function _ljAfficherLigneDlg(affaireIdx, cursor) {
 
   if (nouveauLigneId) {
     _ljState.aLu = false;
-    _ljResetBoutonLu();
+    _ljResetBoutonLu(_ljState._texteEtapeCourrante || '');
 
     // S'abonner aux lectures pour mettre à jour le compteur
     // Math.max(1, nb) : on ne bloque jamais l'abonnement même si la presence n'est pas encore comptée
@@ -627,15 +689,44 @@ function _ljAfficherLigneDlg(affaireIdx, cursor) {
   _ljScreen('lj-dialogue');
 }
 
-function _ljResetBoutonLu() {
+// ── Anti-skip : délai de lecture minimum ────────────────────────
+function _ljTempsLectureMin(texte) {
+  if (!texte) return 5000;
+  const mots = texte.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length;
+  return Math.min(30, Math.max(5, Math.round(mots / 200 * 60))) * 1000;
+}
+
+function _ljResetBoutonLu(texte) {
   const btn = _lj$('lj-btn-lu');
   const cpt = _lj$('lj-lu-compteur');
-  if (btn) {
-    btn.disabled = false;
-    btn.classList.remove('lj-btn-lu-done');
-    btn.textContent = '✓ J\'ai lu';
-  }
   if (cpt) cpt.textContent = '';
+  if (!btn) return;
+
+  // Annuler un ticker précédent si on change de ligne rapidement
+  if (_ljState._lectureTickerInterval) {
+    clearInterval(_ljState._lectureTickerInterval);
+    _ljState._lectureTickerInterval = null;
+  }
+
+  btn.classList.remove('lj-btn-lu-done');
+  btn.disabled = true;
+  btn.textContent = 'Lecture…';
+
+  const delai = texte ? _ljTempsLectureMin(texte) : 5000;
+  let restant = Math.round(delai / 1000);
+
+  // Décompte visuel
+  _ljState._lectureTickerInterval = setInterval(() => {
+    restant--;
+    if (restant > 0) {
+      btn.textContent = 'Lecture… (' + restant + 's)';
+    } else {
+      clearInterval(_ljState._lectureTickerInterval);
+      _ljState._lectureTickerInterval = null;
+      btn.disabled = false;
+      btn.textContent = 'J\'ai lu ✓';
+    }
+  }, 1000);
 }
 
 // ── Marquer la ligne comme lue ──────────────────────────────────
@@ -674,23 +765,32 @@ function _ljAfficherVote() {
 }
 
 // ── Timer côté joueur ───────────────────────────────────────────
-function _ljStartTimer(votesOuvertDepuis) {
+function _ljStartTimer(votesOuvertDepuis, duree) {
   if (_ljState.timerInterval) clearInterval(_ljState.timerInterval);
+
+  // Durée : transmise par le formateur via timer_duree, ou défaut TIMER_JOUEUR
+  const timerDuree = (duree !== undefined && duree !== null) ? duree : TIMER_JOUEUR;
+
+  // Mode sans limite (0) : pas de décompte côté joueur
+  if (timerDuree === 0) {
+    _ljUpdateTimer(0, 0); // affichage ∞
+    return;
+  }
 
   // Calculer le temps déjà écoulé (synchro avec formateur)
   let elapsed = 0;
   if (votesOuvertDepuis) {
     elapsed = Math.floor((Date.now() - new Date(votesOuvertDepuis).getTime()) / 1000);
   }
-  _ljState.timerSecondes = Math.max(0, TIMER_JOUEUR - elapsed);
+  _ljState.timerSecondes = Math.max(0, timerDuree - elapsed);
 
-  _ljUpdateTimer(_ljState.timerSecondes);
+  _ljUpdateTimer(_ljState.timerSecondes, timerDuree);
 
   if (_ljState.timerSecondes <= 0) return; // déjà expiré
 
   _ljState.timerInterval = setInterval(() => {
     _ljState.timerSecondes--;
-    _ljUpdateTimer(_ljState.timerSecondes);
+    _ljUpdateTimer(_ljState.timerSecondes, timerDuree);
     if (_ljState.timerSecondes <= 0) {
       clearInterval(_ljState.timerInterval);
       _ljState.timerInterval = null;
@@ -703,10 +803,17 @@ function _ljStartTimer(votesOuvertDepuis) {
   }, 1000);
 }
 
-function _ljUpdateTimer(secs) {
+function _ljUpdateTimer(secs, duree) {
   const fill = _lj$('lj-timer-fill');
   const txt  = _lj$('lj-timer-secs');
-  const pct  = Math.max(0, secs / TIMER_JOUEUR * 100);
+  const timerDuree = (duree !== undefined && duree !== null && duree > 0) ? duree : TIMER_JOUEUR;
+  // Mode sans limite
+  if (duree === 0) {
+    if (fill) { fill.style.width = '100%'; fill.classList.remove('urgent'); }
+    if (txt)  { txt.textContent = '∞'; txt.classList.remove('urgent'); }
+    return;
+  }
+  const pct = Math.max(0, secs / timerDuree * 100);
   if (fill) {
     fill.style.width = pct + '%';
     fill.classList.toggle('urgent', secs <= 10);
