@@ -497,6 +497,49 @@ function _ljAfficherContexte(idx) {
 
 // ── Afficher une ligne de dialogue + bouton "Lu !" ──────────────
 function _ljAfficherLigneDlg(affaireIdx, cursor) {
+  // Prologue (affaireIdx === -1) : les steps sont directement les lignes PROLOGUE[]
+  if (affaireIdx === -1) {
+    if (typeof PROLOGUE === 'undefined' || !PROLOGUE.length) { _ljScreen('lj-attente'); return; }
+    const line = PROLOGUE[cursor];
+    if (!line) { _ljScreen('lj-attente'); return; }
+    const speakerEl  = _lj$('lj-dlg-speaker');
+    const texteEl    = _lj$('lj-dlg-texte');
+    const affaireEl  = _lj$('lj-dlg-affaire');
+    const progressEl = _lj$('lj-dlg-progress');
+    const portraitEl = _lj$('lj-dlg-portrait');
+    if (affaireEl)  affaireEl.textContent  = 'Introduction';
+    if (progressEl) progressEl.textContent = (cursor + 1) + ' / ' + PROLOGUE.length;
+    if (speakerEl)  speakerEl.textContent  = line.ch ? (line.ch.nm || line.sp) : (line.sp || '');
+    if (texteEl)    texteEl.innerHTML      = line.txt || '';
+    if (portraitEl && line.ch && line.ch.css) {
+      const nom = line.ch.css.replace(/^c-/, '');
+      portraitEl.src = 'assets/characters/' + nom + '.png';
+      portraitEl.alt = speakerEl ? speakerEl.textContent : '';
+      portraitEl.style.display = '';
+    } else if (portraitEl) {
+      portraitEl.src = ''; portraitEl.style.display = 'none';
+    }
+    const dlgCard = document.querySelector('#lj-dialogue .lj-dlg-card');
+    if (dlgCard) { dlgCard.style.animation = 'none'; dlgCard.offsetHeight; dlgCard.style.animation = ''; }
+    const ligneId = 'ch-1_dl' + cursor;
+    const nouveauLigneId = ligneId !== _ljState.ligneIdCourante;
+    _ljState.ligneIdCourante = ligneId;
+    if (nouveauLigneId) {
+      _ljState.aLu = false;
+      _ljResetBoutonLu();
+      const nb = Math.max(1, _ljState.nbParticipants);
+      LiveSession.abonnerLecture(_ljState.sessionCode, ligneId, nb,
+        () => { /* passage géré côté formateur */ },
+        (actuel, total) => {
+          const el = _lj$('lj-lu-compteur');
+          if (el) el.textContent = actuel + ' / ' + total + ' ont lu';
+        }
+      );
+    }
+    _ljScreen('lj-dialogue');
+    return;
+  }
+
   const ch = CHAPTERS[affaireIdx];
   if (!ch) { _ljScreen('lj-attente'); return; }
 
@@ -1102,5 +1145,7 @@ function ljTelechargerAttestation() {
   const a = document.createElement('a');
   a.href     = canvas.toDataURL('image/png');
   a.download = `attestation-${nom.replace(/\s+/g,'-').toLowerCase()}.png`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
 }

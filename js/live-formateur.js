@@ -392,7 +392,7 @@ function _lfNext() {
   const _estPrologue = _lfState.affaireIdx === -1;
   if (step.type === 'reflexe') {
     LiveSession.ouvrirReflexe(_lfState.sessionId, _lfState.formateurToken, _lfState.affaireIdx);
-  } else if (!_estPrologue && step.type !== 'vote' && step.type !== 'tension' && step.type !== 'prologue_fin') {
+  } else if (step.type !== 'vote' && step.type !== 'tension' && step.type !== 'prologue_fin') {
     LiveSession.diffuserDialogue(_lfState.sessionId, _lfState.formateurToken, _lfState.dlgCursor);
   }
 
@@ -403,8 +403,7 @@ function _lfNext() {
   } else if (step.type === 'dlg') {
     _lfRendreDlg(step.line);
     _lfSetPhase('dialogue');
-    // Pendant le prologue (avant la 1ère affaire) : pas de système "j'ai lu"
-    if (!_estPrologue) _lfBrancherLecture(ligneId);
+    if (!_estPrologue || _lfState.participants.length > 0) _lfBrancherLecture(ligneId);
     else _lfSetLectureIndicateur(null);
   } else if (step.type === 'reflexe') {
     _lfRendreReflexe(step.ch, step.reflexeData);
@@ -536,6 +535,7 @@ function _lfRendreContexte(ch) {
   const zone = _lf$('lf-dlg-zone');
   if (!zone) return;
 
+  zone.classList.remove('lf-dlg-zone--large');
   // Charger la scène de l'affaire
   _lfSetScene(ch.sc);
 
@@ -558,6 +558,7 @@ function _lfRendreReflexe(ch, rd) {
   const zone = _lf$('lf-dlg-zone');
   if (!zone) return;
 
+  zone.classList.add('lf-dlg-zone--large');
   _lfSetPersonnage(null, null);
 
   const qHtml = (rd.questions || []).map((q, i) =>
@@ -599,6 +600,7 @@ function _lfRendreTension(ch) {
   const zone = _lf$('lf-dlg-zone');
   if (!zone) return;
 
+  zone.classList.remove('lf-dlg-zone--large');
   _lfSetPersonnage(null, null);
 
   zone.innerHTML = `
@@ -617,6 +619,7 @@ function _lfRendreDlg(line) {
   const zone = _lf$('lf-dlg-zone');
   if (!zone) return;
 
+  zone.classList.remove('lf-dlg-zone--large');
   // Changer la scène si la ligne l'impose, sinon garder celle de l'affaire
   const _affaire = CHAPTERS[_lfState.affaireIdx];
   _lfSetScene(line.sc || (_affaire ? _affaire.sc : 'prologue'));

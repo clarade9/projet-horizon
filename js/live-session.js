@@ -475,9 +475,9 @@ const LiveSession = (() => {
         .eq('session_id', sessionId)
         .eq('affaire', affaireIdx)
         .eq('phase', 'vote');
-      if (error) { console.warn('[LiveSession] lireVotesAffaire:', error.message); return []; }
+      if (error) { console.error('[LiveSession] lireVotesAffaire error:', error.message, error); return []; }
       return data || [];
-    } catch(e) { console.warn('[LiveSession] lireVotesAffaire:', e); return []; }
+    } catch(e) { console.error('[LiveSession] lireVotesAffaire exception:', e); return []; }
   }
 
   // ── Broadcast votes — canal partagé émetteur/récepteur ────────

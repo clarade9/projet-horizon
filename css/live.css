@@ -800,6 +800,12 @@ body#live-resultats > * {
   overflow-y: auto;
 }
 
+/* Réflexe pro : zone sans max-height pour afficher les 8 items sans scroll */
+.lf-dlg-zone--large {
+  max-height: none;
+  overflow-y: visible;
+}
+
 /* Texte de dialogue — comme .dlg-text */
 .lf-dlg-bubble-text {
   font-family: 'Nunito', sans-serif;
