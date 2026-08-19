@@ -464,6 +464,22 @@ const LiveSession = (() => {
     return ch;
   }
 
+  // ── Lecture directe des votes depuis Supabase (fallback si broadcast échoue) ──
+  async function lireVotesAffaire(sessionId, affaireIdx) {
+    const sb = _getClient();
+    if (!sb) return [];
+    try {
+      const { data, error } = await sb
+        .from('votes_live')
+        .select('joueur_id, joueur_nom, choix_index, score, est_correct, phase')
+        .eq('session_id', sessionId)
+        .eq('affaire', affaireIdx)
+        .eq('phase', 'vote');
+      if (error) { console.warn('[LiveSession] lireVotesAffaire:', error.message); return []; }
+      return data || [];
+    } catch(e) { console.warn('[LiveSession] lireVotesAffaire:', e); return []; }
+  }
+
   // ── Broadcast votes — canal partagé émetteur/récepteur ────────
   let _votesChannel = null;
 
@@ -756,6 +772,7 @@ const LiveSession = (() => {
     calculerClassement,
     calculerDebrief,
     exporterCSV,
+    lireVotesAffaire,
     calculerOrdreChoix,
     abonnerSession,
     abonnerVotes,

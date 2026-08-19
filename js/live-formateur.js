@@ -24,6 +24,7 @@ let _lfState = {
   timerSecondes:      TIMER_DUREE,
   countdownInterval:  null,  // C5 — compte à rebours avant ouverture auto des votes
   autoFermerTimeout:  null,  // C4 — délai auto-fermeture quand tous ont voté
+  _pollVotesInterval: null, // polling Supabase en fallback du broadcast
   participants:    [],      // { nom, joueurId }
   votesParChoix:     [0,0,0], // votes reçus pour A/B/C (index original)
   votesTotal:        0,
@@ -796,6 +797,53 @@ function lfOuvrirVotesNow() {
   _lfSetPhase('votes_ouverts');
   LiveSession.ouvrirVotes(_lfState.sessionId, _lfState.formateurToken, _lfState.votesOuvertDepuis);
   _lfStartTimer();
+  _lfStartPollVotes();
+}
+
+// Polling Supabase en fallback si le broadcast n'arrive pas
+function _lfStartPollVotes() {
+  _lfStopPollVotes();
+  _lfState._pollVotesInterval = setInterval(async () => {
+    const votes = await LiveSession.lireVotesAffaire(_lfState.sessionId, _lfState.affaireIdx);
+    if (!votes || votes.length === 0) return;
+
+    let changed = false;
+    for (const v of votes) {
+      if (_lfState.joueurVotes[v.joueur_id]) continue; // déjà compté via broadcast
+      _lfState.joueurVotes[v.joueur_id] = true;
+      const idx = v.choix_index;
+      if (idx >= 0 && idx <= 2) {
+        _lfState.votesParChoix[idx]++;
+        _lfState.votesTotal++;
+      }
+      if (!_lfState.scoreParJoueur[v.joueur_id]) {
+        _lfState.scoreParJoueur[v.joueur_id] = { nom: v.joueur_nom, score: 0 };
+      }
+      _lfState.scoreParJoueur[v.joueur_id].score += v.score || 0;
+      changed = true;
+    }
+
+    if (changed) {
+      _lfMettreAJourBarres();
+      _lfMettreAJourParticipants();
+
+      // Auto-fermeture si tous les participants ont voté
+      const nbParticipants = _lfState.participants.length;
+      if (nbParticipants > 0 && _lfState.votesTotal >= nbParticipants && !_lfState.autoFermerTimeout) {
+        _lfState.autoFermerTimeout = setTimeout(() => {
+          _lfState.autoFermerTimeout = null;
+          lfFermerVotes();
+        }, 1000);
+      }
+    }
+  }, 2000);
+}
+
+function _lfStopPollVotes() {
+  if (_lfState._pollVotesInterval) {
+    clearInterval(_lfState._pollVotesInterval);
+    _lfState._pollVotesInterval = null;
+  }
 }
 
 // ── Ouvrir les votes (alias public pour compatibilité) ────────────
@@ -806,6 +854,7 @@ function lfOuvrirVotes() {
 // ── Fermer les votes → correction directe (C6) ──────────────────
 async function lfFermerVotes() {
   _lfAnnulerCountdown();
+  _lfStopPollVotes();
   if (_lfState.autoFermerTimeout) { clearTimeout(_lfState.autoFermerTimeout); _lfState.autoFermerTimeout = null; }
   if (_lfState.timerInterval) clearInterval(_lfState.timerInterval);
   _lfState.timerInterval = null;
