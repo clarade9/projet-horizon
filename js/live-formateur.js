@@ -1572,14 +1572,15 @@ function _lfSetPhase(phase) {
   if (timerWrap) timerWrap.style.display = ['affaire_active','votes_ouverts'].includes(phase) ? '' : 'none';
 
   const btns = {
-    'lf-btn-dlg-next':       phase === 'dialogue',
-    'lf-btn-fermer-reflexe': phase === 'reflexe_attente',
-    'lf-btn-ouvrir':         phase === 'affaire_active',   // countdown passif
-    'lf-btn-lancer-now':     phase === 'affaire_active',   // "Lancer maintenant"
-    'lf-btn-fermer':         phase === 'votes_ouverts',
-    'lf-btn-resultats':      false, // C6 : supprimé du flow — correction auto après fermeture
-    'lf-btn-suivant':        false, // C6 : supprimé du flow
-    'lf-btn-terminer':       ['affaire_active','votes_ouverts','votes_fermes','resultats','reflexe_attente','reflexe_resultats'].includes(phase),
+    'lf-btn-dlg-next':           phase === 'dialogue',
+    'lf-btn-fermer-reflexe':     phase === 'reflexe_attente',
+    'lf-btn-passer-au-vote':     phase === 'reflexe_resultats',
+    'lf-btn-ouvrir':             phase === 'affaire_active',
+    'lf-btn-lancer-now':         phase === 'affaire_active',
+    'lf-btn-fermer':             phase === 'votes_ouverts',
+    'lf-btn-resultats':          false,
+    'lf-btn-suivant':            false,
+    'lf-btn-terminer':           ['affaire_active','votes_ouverts','votes_fermes','resultats','reflexe_attente','reflexe_resultats'].includes(phase),
   };
   Object.entries(btns).forEach(([id, visible]) => {
     const btn = _lf$(id);
@@ -1587,12 +1588,70 @@ function _lfSetPhase(phase) {
   });
 }
 
-// ── Fermer le réflexe et passer à la suite ───────────────────────
+// ── Fermer le réflexe → afficher le débriefing formateur ────────
 function lfFermerReflexe() {
   LiveSession.fermerReflexe(_lfState.sessionId, _lfState.formateurToken);
   _lfSetPhase('reflexe_resultats');
-  // Passer à l'étape suivante (tension ou vote)
-  _lfNext();
+  _lfRendreDebriefiingReflexe();
+}
+
+// Rendu du récapitulatif Réflexe Pro (phase débriefing formateur)
+function _lfRendreDebriefiingReflexe() {
+  const idx = _lfState.affaireIdx;
+  const rd  = (typeof REFLEXE_DATA !== 'undefined') ? REFLEXE_DATA[idx] : null;
+  const zone = _lf$('lf-dlg-zone');
+  if (!zone || !rd) { _lfPasserAuVote(); return; }
+
+  const ch = CHAPTERS[idx];
+
+  // Extraire les bonnes questions et actions (combo 'good')
+  const goodQ = (rd.combos?.questions?.good || '').split(',').map(Number).filter(n => !isNaN(n));
+  const goodA = (rd.combos?.actions?.good   || '').split(',').map(Number).filter(n => !isNaN(n));
+
+  const qHtml = (rd.questions || []).map((q, i) => {
+    const isBon = goodQ.includes(i);
+    return `<div class="lf-reflexe-item lf-reflexe-item--${isBon ? 'good' : 'neutral'}">
+      <span class="lf-reflexe-num">${isBon ? '✓' : '·'} Q${i+1}</span>${_lfEsc(q.txt)}
+    </div>`;
+  }).join('');
+
+  const aHtml = (rd.actions || []).map((a, i) => {
+    const isBon = goodA.includes(i);
+    return `<div class="lf-reflexe-item lf-reflexe-item--${isBon ? 'good' : 'neutral'}">
+      <span class="lf-reflexe-num">${isBon ? '✓' : '·'} A${i+1}</span>${_lfEsc(a.txt)}
+    </div>`;
+  }).join('');
+
+  const verdict = rd.analysereflexe?.verdictRapide?.good
+    ? `<div class="lf-reflexe-verdict">${_lfEsc(rd.analysereflexe.verdictRapide.good)}</div>`
+    : '';
+
+  zone.innerHTML = `
+    <div class="lf-reflexe-panel lf-reflexe-panel--debrief">
+      <div class="lf-reflexe-header">
+        <div class="lf-reflexe-eyebrow">Débriefing — Réflexe Professionnel</div>
+        <div class="lf-reflexe-title">${_lfEsc(ch.name)}</div>
+        <div class="lf-reflexe-sub">Prenez le temps de discuter des bonnes réponses avec le groupe</div>
+      </div>
+      ${verdict}
+      <div class="lf-reflexe-cols">
+        <div class="lf-reflexe-col">
+          <div class="lf-reflexe-col-title">Questions — bonnes réponses (✓)</div>
+          ${qHtml}
+        </div>
+        <div class="lf-reflexe-col">
+          <div class="lf-reflexe-col-title">Actions — bonnes réponses (✓)</div>
+          ${aHtml}
+        </div>
+      </div>
+    </div>`;
+
+  _lf$('lf-dlg-speaker').textContent = 'Débriefing Réflexe';
+}
+
+// Passer au vote depuis le débriefing réflexe
+function lfPasserAuVote() {
+  _lfNext(); // → tension ou vote
 }
 
 function _lfEsc(str) {

@@ -3518,6 +3518,34 @@ body#live-resultats > * {
   font-weight: 700;
 }
 
+/* Variantes débrief */
+.lf-reflexe-panel--debrief .lf-reflexe-sub {
+  color: var(--lv-green, #22c55e);
+  font-style: italic;
+}
+.lf-reflexe-item--good .lf-reflexe-num {
+  background: color-mix(in srgb, var(--lv-green, #22c55e) 15%, transparent);
+  border-color: var(--lv-green, #22c55e);
+  color: var(--lv-green, #22c55e);
+}
+.lf-reflexe-item--good {
+  color: var(--lv-text);
+  font-weight: 500;
+}
+.lf-reflexe-item--neutral {
+  opacity: 0.55;
+}
+.lf-reflexe-verdict {
+  background: color-mix(in srgb, var(--lv-green, #22c55e) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--lv-green, #22c55e) 40%, transparent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--lv-text2);
+  margin-bottom: 12px;
+}
+
 @media (max-width: 600px) {
   .lf-reflexe-cols { grid-template-columns: 1fr; }
 }

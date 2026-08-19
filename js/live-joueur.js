@@ -470,15 +470,7 @@ function _ljMajAttenteAffaire(idx) {
 function _ljAfficherContexte(idx) {
   const ch = CHAPTERS[idx];
   if (!ch) return;
-  // Pré-remplir les boutons de vote dans l'ordre shufflé (synchronisé avec le formateur)
-  const descs = ['lj-desc-a','lj-desc-b','lj-desc-c'];
-  const ordreChoix = LiveSession.calculerOrdreChoix(idx, _ljState.votesOuvertDepuis);
-  _ljState.ordreChoix = ordreChoix; // mémoriser pour ljVoter
-  ordreChoix.forEach((origIdx, posAffiche) => {
-    const c  = ch.choices[origIdx];
-    const el = _lj$(descs[posAffiche]);
-    if (el) el.textContent = _ljTxt(c.desc, idx);
-  });
+
   _lj$('lj-vote-affaire').textContent = ch.num;
   _lj$('lj-vote-titre').textContent   = ch.name;
 
@@ -488,6 +480,19 @@ function _ljAfficherContexte(idx) {
     const texte = ch.pressureIntro || (ch.context && ch.context.title) || '';
     ctx.textContent = _ljTxt(texte, idx);
   }
+
+  // Ne remplir les descriptions A/B/C qu'une fois l'ordre de shuffle connu
+  // (votesOuvertDepuis null → ordre indéfini, les boutons seront mis à jour dans _ljAfficherVote)
+  if (!_ljState.votesOuvertDepuis) return;
+
+  const descs = ['lj-desc-a','lj-desc-b','lj-desc-c'];
+  const ordreChoix = LiveSession.calculerOrdreChoix(idx, _ljState.votesOuvertDepuis);
+  _ljState.ordreChoix = ordreChoix;
+  ordreChoix.forEach((origIdx, posAffiche) => {
+    const c  = ch.choices[origIdx];
+    const el = _lj$(descs[posAffiche]);
+    if (el) el.textContent = _ljTxt(c.desc, idx);
+  });
 }
 
 // ── Afficher une ligne de dialogue + bouton "Lu !" ──────────────
@@ -731,27 +736,36 @@ async function _ljAfficherResultatPerso() {
     tempsMs = Math.min(30000, Date.now() - new Date(_ljState.votesOuvertDepuis).getTime());
   }
 
+  // Bonus réflexe : +200 pts si le joueur a eu un bon réflexe pro
+  const bonusReflexe = _ljState.reflexeResult === 'good' ? 200 : 0;
+
   _ljState.nbAffaires++;
   if (choixFait === null) {
     // N'a pas voté (temps écoulé sans clic)
     _ljState.streak = 0;
-    _ljAfficherResultatAbsent(posCorrectAff);
+    if (bonusReflexe) {
+      _ljState.scoreTotal += bonusReflexe;
+    }
+    _ljAfficherResultatAbsent(posCorrectAff, bonusReflexe);
   } else if (estCorrect) {
     _ljState.nbCorrects++;
     _ljState.streak++;
     // Score approx (même formule que live-session.js)
     let pts = tempsMs < 5000 ? 1000 : tempsMs < 10000 ? 800 : tempsMs < 20000 ? 600 : 400;
     const bonus = _ljState.streak >= 5 ? 500 : _ljState.streak >= 3 ? 200 : 0;
-    pts += bonus;
+    pts += bonus + bonusReflexe;
     _ljState.scoreTotal += pts;
-    _ljAfficherResultatCorrect(pts, bonus);
+    _ljAfficherResultatCorrect(pts, bonus, bonusReflexe);
   } else {
     _ljState.streak = 0;
-    _ljAfficherResultatIncorrect(posCorrectAff);
+    if (bonusReflexe) {
+      _ljState.scoreTotal += bonusReflexe;
+    }
+    _ljAfficherResultatIncorrect(posCorrectAff, bonusReflexe);
   }
 }
 
-function _ljAfficherResultatCorrect(pts, bonus) {
+function _ljAfficherResultatCorrect(pts, bonus, bonusReflexe) {
   _lj$('lj-resultat-icon').textContent = '✅';
   _lj$('lj-resultat-label').textContent = 'Bonne réponse !';
   _lj$('lj-resultat-sub').textContent = '';
@@ -759,7 +773,11 @@ function _ljAfficherResultatCorrect(pts, bonus) {
   const ptsEl = _lj$('lj-pts');
   ptsEl.textContent = '+' + pts;
   ptsEl.style.display = '';
-  _lj$('lj-pts-label').textContent = bonus > 0 ? `dont +${bonus} bonus streak` : 'points';
+
+  const parts = [];
+  if (bonus > 0) parts.push(`+${bonus} streak`);
+  if (bonusReflexe > 0) parts.push(`+${bonusReflexe} réflexe ✓`);
+  _lj$('lj-pts-label').textContent = parts.length > 0 ? `dont ${parts.join(', ')}` : 'points';
   _lj$('lj-pts-label').style.display = '';
 
   _lj$('lj-bonne-reponse').style.display = 'none';
@@ -769,36 +787,54 @@ function _ljAfficherResultatCorrect(pts, bonus) {
   _ljLancerConfetti();
 }
 
-function _ljAfficherResultatIncorrect(indexCorrect) {
+function _ljAfficherResultatIncorrect(indexCorrect, bonusReflexe) {
   const lettres = ['A','B','C'];
   _lj$('lj-resultat-icon').textContent = '❌';
   _lj$('lj-resultat-label').textContent = 'Mauvaise réponse';
   _lj$('lj-resultat-label').classList.add('lj-shake');
   setTimeout(() => _lj$('lj-resultat-label').classList.remove('lj-shake'), 600);
 
-  _lj$('lj-pts').style.display = 'none';
-  _lj$('lj-pts-label').style.display = 'none';
-
   const bonneEl = _lj$('lj-bonne-reponse');
   bonneEl.textContent = 'La bonne réponse était : ' + lettres[indexCorrect];
   bonneEl.style.display = '';
 
-  _lj$('lj-resultat-sub').textContent = '+0 point';
-  _lj$('lj-score-total').textContent = 'Score total : ' + _ljState.scoreTotal + ' pts';
+  if (bonusReflexe > 0) {
+    _lj$('lj-pts').textContent = '+' + bonusReflexe;
+    _lj$('lj-pts').style.display = '';
+    _lj$('lj-pts-label').textContent = 'bonus réflexe ✓';
+    _lj$('lj-pts-label').style.display = '';
+    _lj$('lj-resultat-sub').textContent = '';
+  } else {
+    _lj$('lj-pts').style.display = 'none';
+    _lj$('lj-pts-label').style.display = 'none';
+    _lj$('lj-resultat-sub').textContent = '+0 point';
+  }
 
+  _lj$('lj-score-total').textContent = 'Score total : ' + _ljState.scoreTotal + ' pts';
   _ljScreen('lj-resultats');
 }
 
-function _ljAfficherResultatAbsent(indexCorrect) {
+function _ljAfficherResultatAbsent(indexCorrect, bonusReflexe) {
   const lettres = ['A','B','C'];
   _lj$('lj-resultat-icon').textContent = '⏱️';
   _lj$('lj-resultat-label').textContent = 'Temps écoulé';
-  _lj$('lj-pts').style.display = 'none';
-  _lj$('lj-pts-label').style.display = 'none';
+
   const bonneEl = _lj$('lj-bonne-reponse');
   bonneEl.textContent = 'La bonne réponse était : ' + lettres[indexCorrect];
   bonneEl.style.display = '';
-  _lj$('lj-resultat-sub').textContent = '+0 point';
+
+  if (bonusReflexe > 0) {
+    _lj$('lj-pts').textContent = '+' + bonusReflexe;
+    _lj$('lj-pts').style.display = '';
+    _lj$('lj-pts-label').textContent = 'bonus réflexe ✓';
+    _lj$('lj-pts-label').style.display = '';
+    _lj$('lj-resultat-sub').textContent = '';
+  } else {
+    _lj$('lj-pts').style.display = 'none';
+    _lj$('lj-pts-label').style.display = 'none';
+    _lj$('lj-resultat-sub').textContent = '+0 point';
+  }
+
   _lj$('lj-score-total').textContent = 'Score total : ' + _ljState.scoreTotal + ' pts';
   _ljScreen('lj-resultats');
 }
